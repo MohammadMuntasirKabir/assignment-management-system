@@ -1,0 +1,9 @@
+global using AssignmentManagement.Data;
+global using AssignmentManagement.Models;
+global using AssignmentManagement.Models.DTOs;
+global using AssignmentManagement.Models.Entities;
+global using AssignmentManagement.Services;
+global using Microsoft.AspNetCore.Authentication.JwtBearer;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.IdentityModel.Tokens;
+global using System.Text;
