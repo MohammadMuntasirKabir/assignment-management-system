@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
 import { ClassSubjectDto, Class, Subject } from "@/lib/types";
+import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function AdminClassSubjectsPage() {
   const [classSubjects, setClassSubjects] = useState<ClassSubjectDto[]>([]);
@@ -61,39 +62,43 @@ export default function AdminClassSubjectsPage() {
     <ProtectedRoute allowedRoles={["Admin"]}>
       <DashboardLayout allowedRoles={["Admin"]}>
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Class-Subject Links</h1>
-            <button
-              onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
+          <div className="title-block">
+            <h1>Class–Subject Links</h1>
+            <button onClick={() => setShowModal(true)} className="btn btn-primary">
+              <PlusIcon className="w-4 h-4" />
               Link Class & Subject
             </button>
           </div>
 
           {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
+          ) : classSubjects.length === 0 ? (
+            <div className="empty-state">No class-subject links yet.</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
+            <div className="sheet overflow-x-auto">
+              <table className="table-sheet">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left">Class</th>
-                    <th className="px-4 py-2 text-left">Subject</th>
-                    <th className="px-4 py-2 text-left">Actions</th>
+                  <tr>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {classSubjects.map((cs) => (
-                    <tr key={cs.id} className="border-b">
-                      <td className="px-4 py-3">{cs.className}</td>
-                      <td className="px-4 py-3">{cs.subjectName}</td>
-                      <td className="px-4 py-3">
+                    <tr key={cs.id}>
+                      <td className="font-medium">{cs.className}</td>
+                      <td>{cs.subjectName}</td>
+                      <td className="whitespace-nowrap">
                         <button
+                          className="icon-btn icon-btn-danger"
                           onClick={() => handleDelete(cs.id)}
-                          className="text-red-600 hover:text-red-800"
+                          aria-label={`Unlink ${cs.className} – ${cs.subjectName}`}
                         >
-                          Unlink
+                          <TrashIcon className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -104,48 +109,56 @@ export default function AdminClassSubjectsPage() {
           )}
 
           {showModal && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
-              <div className="bg-white rounded-lg p-6 w-96">
-                <h2 className="text-xl font-semibold mb-4">Link Class & Subject</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Class</label>
-                    <select
-                      value={formData.classId}
-                      onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Select a class</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Subject</label>
-                    <select
-                      value={formData.subjectId}
-                      onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Select a subject</option>
-                      {subjects.map((subj) => (
-                        <option key={subj.id} value={subj.id}>{subj.name}</option>
-                      ))}
-                    </select>
+            <div
+              className="modal-overlay"
+              onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+            >
+              <div className="modal-sheet">
+                <div className="modal-head">
+                  <h2>Link Class & Subject</h2>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setShowModal(false)}
+                    aria-label="Close"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="space-y-4">
+                    <div className="field">
+                      <label>Class</label>
+                      <select
+                        className="select"
+                        value={formData.classId}
+                        onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                      >
+                        <option value="">Select a class</option>
+                        {classes.map((cls) => (
+                          <option key={cls.id} value={cls.id}>{cls.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Subject</label>
+                      <select
+                        className="select"
+                        value={formData.subjectId}
+                        onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
+                      >
+                        <option value="">Select a subject</option>
+                        {subjects.map((subj) => (
+                          <option key={subj.id} value={subj.id}>{subj.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                  >
+                <div className="modal-foot">
+                  <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
+                  <button className="btn btn-primary" onClick={handleSubmit}>
                     Link
                   </button>
                 </div>

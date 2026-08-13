@@ -36,43 +36,50 @@ export default function AdminAssignmentsPage() {
     return labels[status] || status;
   };
 
+  const stampClass = (status: string) =>
+    statusLabel(status) === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
+
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
       <DashboardLayout allowedRoles={["Admin"]}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">All Assignments</h1>
+          <div className="title-block">
+            <h1>All Assignments</h1>
+            <span className="tb-note">{assignments.length} items</span>
+          </div>
 
           {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="empty-state">No assignments recorded yet.</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
+            <div className="sheet overflow-x-auto">
+              <table className="table-sheet">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left">Title</th>
-                    <th className="px-4 py-2 text-left">Class</th>
-                    <th className="px-4 py-2 text-left">Subject</th>
-                    <th className="px-4 py-2 text-left">Teacher</th>
-                    <th className="px-4 py-2 text-left">Deadline</th>
-                    <th className="px-4 py-2 text-left">Max Marks</th>
-                    <th className="px-4 py-2 text-left">Status</th>
+                  <tr>
+                    <th>Title</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Deadline</th>
+                    <th>Max Marks</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assignments.map((a) => (
-                    <tr key={a.id} className="border-b">
-                      <td className="px-4 py-3 font-medium">{a.title}</td>
-                      <td className="px-4 py-3">{a.className}</td>
-                      <td className="px-4 py-3">{a.subjectName}</td>
-                      <td className="px-4 py-3">{a.teacherName}</td>
-                      <td className="px-4 py-3">{new Date(a.deadline).toLocaleString()}</td>
-                      <td className="px-4 py-3">{a.maxMarks}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-1 rounded text-xs ${
-                          a.status === "Published" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                        }`}>
-                          {statusLabel(a.status)}
-                        </span>
+                    <tr key={a.id}>
+                      <td className="font-medium">{a.title}</td>
+                      <td>{a.className}</td>
+                      <td>{a.subjectName}</td>
+                      <td>{a.teacherName}</td>
+                      <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
+                      <td className="tnum">{a.maxMarks}</td>
+                      <td>
+                        <span className={stampClass(a.status)}>{statusLabel(a.status)}</span>
                       </td>
                     </tr>
                   ))}

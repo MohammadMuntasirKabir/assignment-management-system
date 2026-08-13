@@ -39,48 +39,61 @@ export default function TeacherDashboard() {
     fetchClassSubjects();
   }, []);
 
+  const stampClass = (status: string) =>
+    status === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
+
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
       <DashboardLayout allowedRoles={["Teacher"]}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Teacher Dashboard</h1>
+          <div className="title-block">
+            <h1>Teacher Dashboard</h1>
+            <span className="tb-note">Project Overview</span>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">My Assignments</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{assignments.length}</p>
+            <div className="stat-block">
+              <div className="stat-label">My Assignments</div>
+              <div className="stat-value">{assignments.length}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Submissions to Review</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2">{submissionsCount}</p>
+            <div className="stat-block">
+              <div className="stat-label">Submissions to Review</div>
+              <div className="stat-value">{submissionsCount}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Assigned Classes</h3>
-              <p className="text-3xl font-bold text-purple-600 mt-2">{classSubjects.length}</p>
+            <div className="stat-block">
+              <div className="stat-label">Assigned Classes</div>
+              <div className="stat-value">{classSubjects.length}</div>
             </div>
           </div>
 
           {loading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="empty-state">You have not created any assignments yet.</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <h2 className="text-xl font-semibold p-4 border-b">My Assignments</h2>
-              <table className="w-full">
+            <div className="sheet overflow-x-auto">
+              <div className="anno px-4 pt-4">My Assignments</div>
+              <table className="table-sheet">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left">Title</th>
-                    <th className="px-4 py-2 text-left">Deadline</th>
-                    <th className="px-4 py-2 text-left">Max Marks</th>
-                    <th className="px-4 py-2 text-left">Status</th>
+                  <tr>
+                    <th>Title</th>
+                    <th>Deadline</th>
+                    <th>Max Marks</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assignments.map((a) => (
-                    <tr key={a.id} className="border-b">
-                      <td className="px-4 py-3">{a.title}</td>
-                      <td className="px-4 py-3">{new Date(a.deadline).toLocaleString()}</td>
-                      <td className="px-4 py-3">{a.maxMarks}</td>
-                      <td className="px-4 py-3 capitalize">{a.status.toLowerCase()}</td>
+                    <tr key={a.id}>
+                      <td className="font-medium">{a.title}</td>
+                      <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
+                      <td className="tnum">{a.maxMarks}</td>
+                      <td>
+                        <span className={stampClass(a.status)}>{a.status}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

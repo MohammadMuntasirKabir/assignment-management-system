@@ -6,6 +6,7 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: jest.fn(),
   }),
+  usePathname: () => "/",
 }));
 
 jest.mock("@/components/AuthProvider", () => ({
@@ -62,7 +63,7 @@ describe("DashboardLayout", () => {
       </DashboardLayout>
     );
 
-    expect(screen.getByText("Admin Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Administration · SHEET 01-A")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/admin");
     expect(screen.getByRole("link", { name: "Classes" })).toHaveAttribute("href", "/admin/classes");
     expect(screen.getByRole("link", { name: "Subjects" })).toHaveAttribute("href", "/admin/subjects");
@@ -81,7 +82,7 @@ describe("DashboardLayout", () => {
       </DashboardLayout>
     );
 
-    expect(screen.getByText("Teacher Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Teaching · SHEET 01-T")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "My Assignments" })).toHaveAttribute("href", "/teacher/assignments");
     expect(screen.getByRole("link", { name: "Submissions" })).toHaveAttribute("href", "/teacher/submissions");
     expect(screen.queryByRole("link", { name: "Classes" })).not.toBeInTheDocument();
@@ -96,7 +97,7 @@ describe("DashboardLayout", () => {
       </DashboardLayout>
     );
 
-    expect(screen.getByText("Student Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Student · SHEET 01-S")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Assignments" })).toHaveAttribute("href", "/student/assignments");
     expect(screen.getByRole("link", { name: "My Submissions" })).toHaveAttribute("href", "/student/submissions");
     expect(screen.queryByRole("link", { name: "Classes" })).not.toBeInTheDocument();
@@ -112,8 +113,8 @@ describe("DashboardLayout", () => {
       </DashboardLayout>
     );
 
-    expect(screen.getByText("Teacher")).toBeInTheDocument();
-    const logoutButton = screen.getByRole("button", { name: "Logout" });
+    expect(screen.getByText("Teacher", { selector: "p" })).toBeInTheDocument();
+    const logoutButton = screen.getByRole("button", { name: "Sign out" });
     logoutButton.click();
     expect(mockLogout).toHaveBeenCalled();
   });

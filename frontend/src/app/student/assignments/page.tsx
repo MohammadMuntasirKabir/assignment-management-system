@@ -33,37 +33,41 @@ export default function StudentAssignmentsPage() {
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">My Assignments</h1>
+          <div className="title-block">
+            <h1>My Assignments</h1>
+            <span className="tb-note">{assignments.length} items</span>
+          </div>
 
           {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
           ) : assignments.length === 0 ? (
-            <div className="text-center py-12 text-gray-600">No assignments available.</div>
+            <div className="empty-state">No assignments available.</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {assignments.map((a) => (
-                <div key={a.id} className="bg-white rounded-lg shadow border p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">{a.title}</h2>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      isOverdue(a.deadline)
-                        ? "bg-red-100 text-red-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}>
-                      {isOverdue(a.deadline) ? "Overdue" : "Active"}
-                    </span>
+                <div key={a.id} className="sheet p-5 flex flex-col gap-4">
+                  <div className="flex justify-between items-start gap-3">
+                    <h2 className="font-semibold text-lg leading-snug">{a.title}</h2>
+                    {isOverdue(a.deadline) ? (
+                      <span className="stamp stamp-red whitespace-nowrap">Overdue</span>
+                    ) : (
+                      <span className="stamp stamp-blue whitespace-nowrap">Active</span>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">{a.description}</p>
-                  <div className="text-sm text-gray-500 mb-4">
-                    <div><strong>Subject:</strong> {a.subjectName}</div>
-                    <div><strong>Class:</strong> {a.className}</div>
-                    <div><strong>Deadline:</strong> {new Date(a.deadline).toLocaleString()}</div>
-                    <div><strong>Max Marks:</strong> {a.maxMarks}</div>
-                    <div><strong>Teacher:</strong> {a.teacherName}</div>
+                  <p className="text-sm text-gray-700 line-clamp-3">{a.description}</p>
+                  <div className="text-sm space-y-1">
+                    <div><span className="anno">Subject</span> {a.subjectName}</div>
+                    <div><span className="anno">Class</span> {a.className}</div>
+                    <div><span className="anno">Deadline</span> <span className="tnum">{new Date(a.deadline).toLocaleString()}</span></div>
+                    <div><span className="anno">Max Marks</span> <span className="tnum">{a.maxMarks}</span></div>
+                    <div><span className="anno">Teacher</span> {a.teacherName}</div>
                   </div>
                   <Link
                     href={`/student/assignments/${a.id}`}
-                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    className="btn btn-primary w-full mt-auto"
                   >
                     View Details
                   </Link>

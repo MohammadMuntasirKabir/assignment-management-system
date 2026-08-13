@@ -5,7 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { Class, CreateClassDto } from "@/lib/types";
-import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function AdminClassesPage() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -69,46 +69,50 @@ export default function AdminClassesPage() {
     <ProtectedRoute allowedRoles={["Admin"]}>
       <DashboardLayout allowedRoles={["Admin"]}>
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Manage Classes</h1>
-            <button
-              onClick={openCreateModal}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center gap-2"
-            >
-              <PlusIcon className="w-5 h-5" />
+          <div className="title-block">
+            <h1>Manage Classes</h1>
+            <button onClick={openCreateModal} className="btn btn-primary">
+              <PlusIcon className="w-4 h-4" />
               Add Class
             </button>
           </div>
 
           {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
+          ) : classes.length === 0 ? (
+            <div className="empty-state">No classes recorded yet.</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
+            <div className="sheet overflow-x-auto">
+              <table className="table-sheet">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Description</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {classes.map((cls) => (
-                    <tr key={cls.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-3">{cls.name}</td>
-                      <td className="px-4 py-3">{cls.description}</td>
-                      <td className="px-4 py-3">
+                    <tr key={cls.id}>
+                      <td className="font-medium">{cls.name}</td>
+                      <td>{cls.description}</td>
+                      <td className="whitespace-nowrap">
                         <button
+                          className="icon-btn"
                           onClick={() => openEditModal(cls)}
-                          className="text-blue-600 hover:text-blue-800 mr-2"
+                          aria-label={`Edit ${cls.name}`}
                         >
-                          <PencilIcon className="w-5 h-5 inline" />
+                          <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
+                          className="icon-btn icon-btn-danger"
                           onClick={() => handleDelete(cls.id)}
-                          className="text-red-600 hover:text-red-800"
+                          aria-label={`Delete ${cls.name}`}
                         >
-                          <TrashIcon className="w-5 h-5 inline" />
+                          <TrashIcon className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -119,42 +123,48 @@ export default function AdminClassesPage() {
           )}
 
           {showModal && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
-              <div className="bg-white rounded-lg p-6 w-96">
-                <h2 className="text-xl font-semibold mb-4">
-                  {editingClass ? "Edit Class" : "Add Class"}
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <input
-                      type="text"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+            <div
+              className="modal-overlay"
+              onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+            >
+              <div className="modal-sheet">
+                <div className="modal-head">
+                  <h2>{editingClass ? "Edit Class" : "Add Class"}</h2>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setShowModal(false)}
+                    aria-label="Close"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="space-y-4">
+                    <div className="field">
+                      <label>Name</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Description</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                  >
+                <div className="modal-foot">
+                  <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
+                  <button className="btn btn-primary" onClick={handleSubmit}>
                     Save
                   </button>
                 </div>

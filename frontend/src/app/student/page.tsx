@@ -32,56 +32,75 @@ export default function StudentDashboard() {
   const pendingCount = submissions.filter(s => s.status === "Submitted" || s.status === "Late").length;
   const gradedCount = submissions.filter(s => s.status === "Reviewed").length;
 
+  const stampClass = (status: string) => {
+    switch (status) {
+      case "Reviewed":
+        return "stamp stamp-green";
+      case "Late":
+        return "stamp stamp-red";
+      case "Submitted":
+        return "stamp stamp-blue";
+      default:
+        return "stamp stamp-gray";
+    }
+  };
+
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Student Dashboard</h1>
+          <div className="title-block">
+            <h1>Student Dashboard</h1>
+            <span className="tb-note">Project Overview</span>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Available Assignments</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{assignments.length}</p>
+            <div className="stat-block">
+              <div className="stat-label">Available Assignments</div>
+              <div className="stat-value">{assignments.length}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Pending Review</h3>
-              <p className="text-3xl font-bold text-yellow-600 mt-2">{pendingCount}</p>
+            <div className="stat-block">
+              <div className="stat-label">Pending Review</div>
+              <div className="stat-value">{pendingCount}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Graded Submissions</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2">{gradedCount}</p>
+            <div className="stat-block">
+              <div className="stat-label">Graded Submissions</div>
+              <div className="stat-value">{gradedCount}</div>
             </div>
           </div>
 
           {loading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
           ) : (
             <>
-              <div className="bg-white rounded-lg shadow mb-6 overflow-hidden">
-                <h2 className="text-xl font-semibold p-4 border-b">My Assignments</h2>
+              <div className="sheet overflow-x-auto mb-6">
+                <div className="anno px-4 pt-4">My Assignments</div>
                 {assignments.length === 0 ? (
-                  <p className="p-4 text-gray-600">No assignments available.</p>
+                  <div className="empty-state">No assignments available.</div>
                 ) : (
-                  <table className="w-full">
+                  <table className="table-sheet">
                     <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="px-4 py-2 text-left">Title</th>
-                        <th className="px-4 py-2 text-left">Subject</th>
-                        <th className="px-4 py-2 text-left">Deadline</th>
-                        <th className="px-4 py-2 text-left">Status</th>
+                      <tr>
+                        <th>Title</th>
+                        <th>Subject</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {assignments.map((a) => (
-                        <tr key={a.id} className="border-b">
-                          <td className="px-4 py-3 font-medium">{a.title}</td>
-                          <td className="px-4 py-3">{a.subjectName}</td>
-                          <td className="px-4 py-3">{new Date(a.deadline).toLocaleString()}</td>
-                          <td className="px-4 py-3">
+                        <tr key={a.id}>
+                          <td className="font-medium">{a.title}</td>
+                          <td>{a.subjectName}</td>
+                          <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
+                          <td>
                             {new Date() > new Date(a.deadline) ? (
-                              <span className="text-red-600 text-sm">Past due</span>
+                              <span className="stamp stamp-red">Past due</span>
                             ) : (
-                              <span className="text-green-600 text-sm">Due soon</span>
+                              <span className="stamp stamp-blue">Due soon</span>
                             )}
                           </td>
                         </tr>
@@ -91,27 +110,29 @@ export default function StudentDashboard() {
                 )}
               </div>
 
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <h2 className="text-xl font-semibold p-4 border-b">My Recent Submissions</h2>
+              <div className="sheet overflow-x-auto">
+                <div className="anno px-4 pt-4">My Recent Submissions</div>
                 {submissions.length === 0 ? (
-                  <p className="p-4 text-gray-600">No submissions yet.</p>
+                  <div className="empty-state">No submissions yet.</div>
                 ) : (
-                  <table className="w-full">
+                  <table className="table-sheet">
                     <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="px-4 py-2 text-left">Assignment</th>
-                        <th className="px-4 py-2 text-left">Status</th>
-                        <th className="px-4 py-2 text-left">Marks</th>
-                        <th className="px-4 py-2 text-left">Feedback</th>
+                      <tr>
+                        <th>Assignment</th>
+                        <th>Status</th>
+                        <th>Marks</th>
+                        <th>Feedback</th>
                       </tr>
                     </thead>
                     <tbody>
                       {submissions.map((s) => (
-                        <tr key={s.id} className="border-b">
-                          <td className="px-4 py-3">{s.assignmentTitle}</td>
-                          <td className="px-4 py-3 capitalize">{s.status.toLowerCase()}</td>
-                          <td className="px-4 py-3">{s.marks ?? "—"}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{s.feedback ?? "—"}</td>
+                        <tr key={s.id}>
+                          <td>{s.assignmentTitle}</td>
+                          <td>
+                            <span className={stampClass(s.status)}>{s.status}</span>
+                          </td>
+                          <td className="tnum">{s.marks ?? "—"}</td>
+                          <td>{s.feedback ?? "—"}</td>
                         </tr>
                       ))}
                     </tbody>

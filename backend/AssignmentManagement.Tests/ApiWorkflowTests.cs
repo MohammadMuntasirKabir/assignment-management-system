@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using AssignmentManagement.Controllers;
 using AssignmentManagement.Models.DTOs;
 using AssignmentManagement.Models.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -556,6 +559,45 @@ public class ApiWorkflowTests : IDisposable
 
         result.Should().BeOfType<NoContentResult>();
         (await _context.Users.FindAsync(data.Teacher2.Id)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Admin_CannotDemoteSelf_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.UpdateUser(data.Admin.Id, new UpdateUserDto
+        {
+            Name = data.Admin.Name,
+            Email = data.Admin.Email,
+            Role = UserRole.Teacher
+        });
+
+        StatusCodeOf(result).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Admin_CannotDeleteSelf_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.DeleteUser(data.Admin.Id);
+
+        StatusCodeOf(result).Should().Be(400);
     }
 
     public void Dispose()

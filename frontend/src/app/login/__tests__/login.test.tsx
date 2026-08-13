@@ -27,18 +27,18 @@ describe("LoginPage", () => {
 
   it("renders the login form", () => {
     render(<LoginPage />);
-    expect(screen.getByText("Assignment Management System")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
-  it("shows demo credentials", () => {
+  it("does not show demo credentials", () => {
     render(<LoginPage />);
-    expect(screen.getByText("Demo Credentials:")).toBeInTheDocument();
-    expect(screen.getByText(/admin@example.com/)).toBeInTheDocument();
-    expect(screen.getByText(/teacher1@example.com/)).toBeInTheDocument();
-    expect(screen.getByText(/student1@example.com/)).toBeInTheDocument();
+    expect(screen.queryByText("Demo Credentials:")).not.toBeInTheDocument();
+    expect(screen.queryByText(/admin@example.com/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/teacher1@example.com/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/student1@example.com/)).not.toBeInTheDocument();
   });
 
   it("renders required form fields", () => {
@@ -62,7 +62,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "admin@example.com" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "admin123" } });
-    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith("admin@example.com", "admin123");

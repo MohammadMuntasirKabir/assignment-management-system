@@ -27,4 +27,19 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto)
+    {
+        // Public self-registration can never choose a privileged role.
+        // Role changes are an admin-only operation.
+        dto.Role = UserRole.Student;
+
+        var result = await _authService.RegisterAsync(dto);
+        if (result == null)
+            return Conflict(new { message = "An account with this email already exists" });
+
+        return Ok(result);
+    }
 }

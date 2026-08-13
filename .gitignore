@@ -44,3 +44,7 @@ Desktop.ini
 *.db
 *.sqlite
 *.bak
+
+# Tool config
+.claude/
+.codex/

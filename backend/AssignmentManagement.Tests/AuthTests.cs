@@ -1,5 +1,8 @@
+using AssignmentManagement.Controllers;
 using AssignmentManagement.Models;
 using AssignmentManagement.Models.DTOs;
+using AssignmentManagement.Models.Entities;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using FluentAssertions;
 
@@ -124,5 +127,66 @@ public class AuthTests : IDisposable
     public void Dispose()
     {
         _context.Dispose();
+    }
+}
+
+public class AuthControllerTests
+{
+    [Fact]
+    public async Task Register_PublicEndpoint_ForcesStudentRole()
+    {
+        RegisterDto? captured = null;
+        var service = new CapturingAuthService(dto => { captured = dto; return new AuthResponseDto(); });
+        var controller = new AuthController(service);
+
+        var result = await controller.Register(new RegisterDto
+        {
+            Name = "Escalation Attempt",
+            Email = "attacker@example.com",
+            Password = "password123",
+            Role = UserRole.Admin
+        });
+
+        captured.Should().NotBeNull();
+        captured!.Role.Should().Be(UserRole.Student, "public registration must never escalate privileges");
+        result.Result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task Register_PublicEndpoint_DuplicateEmail_ReturnsConflict()
+    {
+        var service = new CapturingAuthService(_ => null);
+        var controller = new AuthController(service);
+
+        var result = await controller.Register(new RegisterDto
+        {
+            Name = "Duplicate",
+            Email = "existing@example.com",
+            Password = "password123",
+            Role = UserRole.Student
+        });
+
+        result.Result.Should().BeOfType<ConflictObjectResult>();
+    }
+
+    private class CapturingAuthService : IAuthService
+    {
+        private readonly Func<RegisterDto, AuthResponseDto?> _onRegister;
+
+        public CapturingAuthService(Func<RegisterDto, AuthResponseDto?> onRegister)
+        {
+            _onRegister = onRegister;
+        }
+
+        public Task<AuthResponseDto?> LoginAsync(LoginDto dto) => Task.FromResult<AuthResponseDto?>(null);
+
+        public Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
+            => Task.FromResult(_onRegister(dto));
+
+        public Task<User?> CreateUserAsync(RegisterDto dto) => Task.FromResult<User?>(null);
+
+        public Guid GetUserIdFromToken(System.Security.Claims.ClaimsPrincipal user) => Guid.Empty;
+
+        public UserRole GetUserRoleFromToken(System.Security.Claims.ClaimsPrincipal user) => UserRole.Student;
     }
 }

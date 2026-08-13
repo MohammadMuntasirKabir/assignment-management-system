@@ -26,56 +26,59 @@ export default function StudentSubmissionsPage() {
     fetchSubmissions();
   }, []);
 
-  const statusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      Draft: "bg-gray-100 text-gray-800",
-      Submitted: "bg-blue-100 text-blue-800",
-      Late: "bg-orange-100 text-orange-800",
-      Reviewed: "bg-green-100 text-green-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+  const stampClass = (status: string) => {
+    switch (status) {
+      case "Reviewed":
+        return "stamp stamp-green";
+      case "Late":
+        return "stamp stamp-red";
+      case "Submitted":
+        return "stamp stamp-blue";
+      default:
+        return "stamp stamp-gray";
+    }
   };
 
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">My Submissions</h1>
+          <div className="title-block">
+            <h1>My Submissions</h1>
+            <span className="tb-note">{submissions.length} items</span>
+          </div>
 
           {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
           ) : submissions.length === 0 ? (
-            <div className="text-center py-12 text-gray-600">No submissions yet.</div>
+            <div className="empty-state">No submissions yet.</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
+            <div className="sheet overflow-x-auto">
+              <table className="table-sheet">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left">Assignment</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Marks</th>
-                    <th className="px-4 py-2 text-left">Submitted</th>
-                    <th className="px-4 py-2 text-left">Feedback</th>
+                  <tr>
+                    <th>Assignment</th>
+                    <th>Status</th>
+                    <th>Marks</th>
+                    <th>Submitted</th>
+                    <th>Feedback</th>
                   </tr>
                 </thead>
                 <tbody>
                   {submissions.map((s) => (
-                    <tr key={s.id} className="border-b">
-                      <td className="px-4 py-3 font-medium">{s.assignmentTitle}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-1 rounded text-xs capitalize ${statusColor(s.status)}`}>
-                          {s.status}
-                        </span>
+                    <tr key={s.id}>
+                      <td className="font-medium">{s.assignmentTitle}</td>
+                      <td>
+                        <span className={stampClass(s.status)}>{s.status}</span>
                       </td>
-                      <td className="px-4 py-3">
-                        {s.marks !== null ? `${s.marks}` : "Not graded"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="tnum">{s.marks !== null ? `${s.marks}` : "Not graded"}</td>
+                      <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {s.feedback || "—"}
-                      </td>
+                      <td>{s.feedback || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

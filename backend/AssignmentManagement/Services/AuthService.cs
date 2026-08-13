@@ -29,7 +29,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        var email = NormalizeEmail(dto.Email);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null) return null;
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
@@ -47,13 +48,14 @@ public class AuthService : IAuthService
 
     public async Task<User?> CreateUserAsync(RegisterDto dto)
     {
-        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        var email = NormalizeEmail(dto.Email);
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (existingUser != null) return null;
 
         var user = new User
         {
-            Name = dto.Name,
-            Email = dto.Email,
+            Name = dto.Name.Trim(),
+            Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Role = dto.Role,
             CreatedAt = DateTime.UtcNow
@@ -62,6 +64,11 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         return user;
+    }
+
+    private static string NormalizeEmail(string email)
+    {
+        return string.IsNullOrWhiteSpace(email) ? string.Empty : email.Trim().ToLowerInvariant();
     }
 
     private AuthResponseDto CreateAuthResponse(User user)
@@ -104,8 +111,8 @@ public class AuthService : IAuthService
 
     public Guid GetUserIdFromToken(ClaimsPrincipal user)
     {
-        var userIdClaim = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                          ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdClaim = user?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                          ?? user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (Guid.TryParse(userIdClaim, out var userId))
             return userId;
         return Guid.Empty;
@@ -113,7 +120,7 @@ public class AuthService : IAuthService
 
     public UserRole GetUserRoleFromToken(ClaimsPrincipal user)
     {
-        var roleClaim = user.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+        var roleClaim = user?.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
         return Enum.TryParse<UserRole>(roleClaim, out var role) ? role : UserRole.Student;
     }
 }

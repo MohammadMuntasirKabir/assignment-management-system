@@ -1,26 +1,780 @@
 @import "tailwindcss";
 
+/* ============================================================
+   DESIGN COMMIT — "Drafting-Sheet" world (seed key 136a0b86)
+   OnnoRokom Projukti · Assignment & Submission Management System
+   THESIS: a precise technical drawing of the assignment cycle —
+   hairline rules, a title block, engineering-blue ink and vermillion
+   revision annotations carry every state. It refuses the generic
+   SaaS "white card + rounded shadow" default.
+   OWN-WORLD: warm drafting paper ground, hairline ink rules, blue
+   for active/ink work, vermillion only for revision (late/overdue/
+   destructive), stamp-style statuses, tabular numerals.
+   STORY: teachers and students read the system like an engineering
+   sheet: every status is a stamp, every deadline a dimension, every
+   list a ruled table. Nothing is ambiguous.
+   FORM: drafting-sheet; restrained Operate palette.
+   FINISH: unreviewed and undocumented is unfinished.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* drafting paper */
+  --paper: #f4f1ea;
+  --paper-card: #fdfcf7;
+  --paper-sheet: #fffef9;
+  --grid-line: rgba(27, 36, 48, 0.055);
+  /* ink */
+  --ink: #1b2430;
+  --ink-soft: #5a6472;
+  --ink-faint: #8b93a0;
+  --hairline: rgba(27, 36, 48, 0.18);
+  --hairline-strong: rgba(27, 36, 48, 0.34);
+  /* engineering blue */
+  --blue: #2050c9;
+  --blue-deep: #163a94;
+  --blue-ink: #0f2a6e;
+  --blue-wash: rgba(32, 80, 201, 0.09);
+  /* revision / status inks */
+  --red: #bf2a1e;
+  --red-deep: #a52318;
+  --red-ink: #7f1d16;
+  --red-wash: rgba(191, 42, 30, 0.09);
+  --red-wash-strong: rgba(191, 42, 30, 0.16);
+  --green: #1a7a4b;
+  --green-wash: rgba(26, 122, 75, 0.09);
+  --amber: #8a6200;
+  --amber-wash: rgba(138, 98, 0, 0.10);
+  --purple: #5a3fc4;
+  --purple-wash: rgba(90, 63, 196, 0.09);
+  --gray: #4b5563;
+  --gray-wash: rgba(75, 85, 99, 0.09);
+  /* radii — sheets stay crisp; clickables round off for tactility */
+  --r: 3px;
+  --r-sm: 2px;
+  --r-btn: 7px;
+  --r-pill: 999px;
+  /* spacing rhythm */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-card: var(--paper-card);
+  --color-paper-sheet: var(--paper-sheet);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-blue: var(--blue);
+  --color-blue-deep: var(--blue-deep);
+  --color-blue-ink: var(--blue-ink);
+  --color-red: var(--red);
+  --color-green: var(--green);
+  --color-amber: var(--amber);
+  --color-purple: var(--purple);
+  --color-gray: var(--gray);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--hairline);
+}
+
+::selection {
+  background-color: var(--blue-wash);
+  color: var(--ink);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--paper-sheet) inset;
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------
+   Paper sheets — the drawing surface. Hairline frame + corner
+   registration marks, like a machined drawing sheet.
+   ------------------------------------------------------------------ */
+.sheet {
+  position: relative;
+  background-color: var(--paper-sheet);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r);
+  box-shadow: 0 1px 2px rgba(27, 36, 48, 0.06), 0 6px 18px -12px rgba(27, 36, 48, 0.18);
+}
+
+.sheet::before,
+.sheet::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.sheet::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--hairline-strong);
+  border-left: 1px solid var(--hairline-strong);
+}
+
+.sheet::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--hairline-strong);
+  border-right: 1px solid var(--hairline-strong);
+}
+
+/* ------------------------------------------------------------------
+   Title block — the classic drawing title strip. Small-caps tracked
+   labels above a hairline rule.
+   ------------------------------------------------------------------ */
+.title-block {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--hairline-strong);
+  margin-bottom: var(--s5);
+}
+
+.title-block h1 {
+  font-size: 1.45rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+}
+
+.title-block .tb-note {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+/* small-caps drafting annotation label */
+.anno {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-soft);
+}
+
+.anno-red {
+  color: var(--red);
+}
+
+/* ------------------------------------------------------------------
+   Buttons — machined controls. Crisp, one ink stroke, tabular text.
+   ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background-color: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--blue-deep);
+  border-color: var(--blue-deep);
+}
+
+.btn-secondary {
+  background-color: var(--gray-wash);
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: rgba(75, 85, 99, 0.14);
+  border-color: var(--ink-faint);
+}
+
+.btn-danger {
+  background-color: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--red-deep);
+  border-color: var(--red-deep);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--ink-soft);
+  border-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: rgba(27, 36, 48, 0.06);
+  color: var(--ink);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.74rem;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background-color: var(--blue-wash);
+  color: var(--blue-ink);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.icon-btn:hover {
+  background-color: rgba(32, 80, 201, 0.16);
+  color: var(--blue-deep);
+}
+
+.icon-btn-danger {
+  background-color: var(--red-wash);
+  color: var(--red);
+}
+
+.icon-btn-danger:hover {
+  background-color: var(--red-wash-strong);
+  color: var(--red-ink);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------------
+   Forms — filled on the sheet, one hairline boundary.
+   ------------------------------------------------------------------ */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.field label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  background-color: var(--paper-sheet);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--ink-faint);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-wash);
+}
+
+.input[aria-invalid="true"],
+.textarea[aria-invalid="true"] {
+  border-color: var(--red);
+}
+
+.field-error {
+  font-size: 0.76rem;
+  color: var(--red);
+}
+
+/* ------------------------------------------------------------------
+   Stamps — statuses are rubber stamps, not tinted pills.
+   ------------------------------------------------------------------ */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: var(--r-sm);
+  line-height: 1.25;
+}
+
+.stamp::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.stamp-blue {
+  color: var(--blue);
+  background: var(--blue-wash);
+}
+
+.stamp-green {
+  color: var(--green);
+  background: var(--green-wash);
+}
+
+.stamp-red {
+  color: var(--red);
+  background: var(--red-wash);
+}
+
+.stamp-amber {
+  color: var(--amber);
+  background: var(--amber-wash);
+}
+
+.stamp-purple {
+  color: var(--purple);
+  background: var(--purple-wash);
+}
+
+.stamp-gray {
+  color: var(--gray);
+  background: var(--gray-wash);
+}
+
+/* ------------------------------------------------------------------
+   Ruled tables — hairline columns and rows, tabular numerals.
+   ------------------------------------------------------------------ */
+.table-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.table-sheet th {
+  text-align: center;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid var(--hairline-strong);
+  white-space: nowrap;
+}
+
+.table-sheet td {
+  text-align: center;
+  padding: 0.72rem 0.9rem;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+
+.table-sheet tbody tr {
+  transition: background-color 0.1s ease;
+}
+
+.table-sheet tbody tr:hover {
+  background-color: rgba(32, 80, 201, 0.045);
+}
+
+.table-sheet tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------
+   Modals — "detail sheets" pinned over the drawing board.
+   ------------------------------------------------------------------ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 26, 35, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 1rem 1rem;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.modal-sheet {
+  width: 100%;
+  max-width: 30rem;
+  background-color: var(--paper-sheet);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 24px 48px -24px rgba(20, 26, 35, 0.4);
+}
+
+.modal-sheet .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s4) var(--s5) var(--s3);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+
+.modal-sheet .modal-head h2 {
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.modal-sheet .modal-body {
+  padding: var(--s5);
+}
+
+.modal-sheet .modal-foot {
+  display: flex;
+  gap: var(--s3);
+  justify-content: flex-end;
+  padding: var(--s4) var(--s5);
+  border-top: 1px solid var(--hairline);
+}
+
+/* ------------------------------------------------------------------
+   Navigation — the drawing index. Left rail of hairline entries with
+   a blue edge on the active sheet.
+   ------------------------------------------------------------------ */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  border-radius: var(--r-pill);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(27, 36, 48, 0.05);
+  color: var(--ink);
+}
+
+.nav-item-active {
+  background-color: var(--blue-wash);
+  color: var(--blue-ink);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------
+   Stat blocks — measurement notes on the sheet (tabular figures,
+   hairline frame). Not glossy metric cards.
+   ------------------------------------------------------------------ */
+.stat-block {
+  background-color: var(--paper-sheet);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r);
+  padding: var(--s4);
+}
+
+.stat-block .stat-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--ink-soft);
+}
+
+.stat-block .stat-value {
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--s2);
+  color: var(--blue-ink);
+}
+
+/* quick action tile in stat row */
+.action-tile {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-btn);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  background-color: var(--paper-sheet);
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.action-tile:hover {
+  border-color: var(--blue);
+  color: var(--blue-ink);
+  background-color: var(--blue-wash);
+}
+
+/* ------------------------------------------------------------------
+   Notice / callouts
+   ------------------------------------------------------------------ */
+.notice {
+  display: flex;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r);
+  font-size: 0.84rem;
+}
+
+.notice-error {
+  border-color: var(--red);
+  background-color: var(--red-wash);
+  color: var(--ink);
+}
+
+.notice-success {
+  border-color: var(--green);
+  background-color: var(--green-wash);
+  color: var(--ink);
+}
+
+.notice-info {
+  border-color: var(--blue);
+  background-color: var(--blue-wash);
+  color: var(--ink);
+}
+
+/* empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s7) var(--s5);
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* loading */
+.loading-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  padding: var(--s6) var(--s5);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--hairline-strong);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* auth surfaces — the sheet you fill in, pinned over the classroom */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  background:
+    radial-gradient(120% 100% at 50% 38%, rgba(27, 36, 48, 0) 0%, rgba(27, 36, 48, 0.32) 100%),
+    linear-gradient(rgba(244, 241, 234, 0.66), rgba(234, 228, 215, 0.86)),
+    url("/classroom.jpg") center / cover no-repeat;
+}
+
+.auth-sheet {
+  width: 100%;
+  max-width: 26rem;
+  background-color: rgba(255, 254, 249, 0.93);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.75) inset,
+    0 0 0 3px var(--blue-wash) inset,
+    0 24px 64px -24px rgba(20, 26, 35, 0.6),
+    0 0 48px -8px rgba(255, 255, 255, 0.4);
+  position: relative;
+}
+
+.auth-sheet::before,
+.auth-sheet::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.auth-sheet::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--hairline-strong);
+  border-left: 1px solid var(--hairline-strong);
+}
+
+.auth-sheet::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--hairline-strong);
+  border-right: 1px solid var(--hairline-strong);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) var(--s6);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+
+.auth-brand .brand-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--blue-ink);
+}
+
+.auth-brand .brand-rev {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint);
+}
+
+.auth-body {
+  padding: var(--s6);
+}
+
+.auth-title {
+  font-size: 1.4rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--s2);
+}
+
+.auth-sub {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0 0 var(--s5);
+}
+
+.auth-link {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: var(--s4) var(--s6) var(--s5);
+  border-top: 1px solid var(--hairline);
+}
+
+.auth-link a {
+  color: var(--blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

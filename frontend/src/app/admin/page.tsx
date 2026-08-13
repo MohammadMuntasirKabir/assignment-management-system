@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
@@ -32,36 +33,51 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
+  const actions = [
+    { href: "/admin/classes", label: "Manage Classes" },
+    { href: "/admin/subjects", label: "Manage Subjects" },
+    { href: "/admin/class-subjects", label: "Link Class & Subject" },
+    { href: "/admin/users", label: "Manage Users" },
+    { href: "/admin/assignments", label: "View Assignments" },
+    { href: "/admin/submissions", label: "View Submissions" },
+  ];
+
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
       <DashboardLayout allowedRoles={["Admin"]}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Dashboard</h1>
+          <div className="title-block">
+            <h1>Admin Dashboard</h1>
+            <span className="tb-note">Project Overview</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Total Users</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{usersCount ?? "—"}</p>
+            <div className="stat-block">
+              <div className="stat-label">Total Users</div>
+              <div className="stat-value">{usersCount ?? "—"}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Total Classes</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2">{classesCount ?? "—"}</p>
+            <div className="stat-block">
+              <div className="stat-label">Total Classes</div>
+              <div className="stat-value">{classesCount ?? "—"}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Total Assignments</h3>
-              <p className="text-3xl font-bold text-purple-600 mt-2">{assignmentsCount ?? "—"}</p>
+            <div className="stat-block">
+              <div className="stat-label">Total Assignments</div>
+              <div className="stat-value">{assignmentsCount ?? "—"}</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-700">Total Submissions</h3>
-              <p className="text-3xl font-bold text-orange-600 mt-2">{submissionsCount ?? "—"}</p>
+            <div className="stat-block">
+              <div className="stat-label">Total Submissions</div>
+              <div className="stat-value">{submissionsCount ?? "—"}</div>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <a href="/admin/classes" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Manage Classes</a>
-              <a href="/admin/subjects" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Manage Subjects</a>
-              <a href="/admin/users" className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">Manage Users</a>
-              <a href="/admin/assignments" className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition">View Assignments</a>
+
+          <div className="sheet p-5">
+            <div className="anno mb-3">Quick Actions</div>
+            <div className="flex flex-wrap gap-3">
+              {actions.map((a) => (
+                <Link key={a.href} href={a.href} className="action-tile">
+                  {a.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

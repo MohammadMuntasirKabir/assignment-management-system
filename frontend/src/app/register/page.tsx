@@ -8,26 +8,41 @@ import { roleNumberToRole } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/api";
 import { UserRole } from "@/lib/types";
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const router = useRouter();
+
+  const validate = (): string | null => {
+    if (!name.trim()) return "Please enter your full name.";
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return "Enter a valid email address.";
+    if (password.length < 6) return "Password must be at least 6 characters.";
+    if (password !== confirm) return "Passwords do not match.";
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    const invalid = validate();
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
+    setLoading(true);
 
     try {
-      const response = await login(email, password);
+      const response = await register(name.trim(), email.trim(), password);
       const role = roleNumberToRole(response.role);
       const rolePath = role.toLowerCase() as Lowercase<UserRole>;
       router.replace(`/${rolePath}`);
     } catch (err) {
-      setError(getErrorMessage(err, "Invalid email or password"));
+      setError(getErrorMessage(err, "Registration failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -46,12 +61,15 @@ export default function LoginPage() {
             </svg>
             <span className="brand-name">OnnoRokom Projukti</span>
           </span>
-          <span className="brand-rev">ASM · AUTH</span>
+          <span className="brand-rev">ASM · REG</span>
         </div>
 
         <div className="auth-body">
-          <h1 className="auth-title">Sign in</h1>
-          <p className="auth-sub">Enter your credentials to open your workboard.</p>
+          <h1 className="auth-title">Create your account</h1>
+          <p className="auth-sub">
+            New accounts open as <span className="stamp stamp-blue">Student</span>.{" "}
+            An administrator can change your role later.
+          </p>
 
           {error && (
             <div className="notice notice-error mb-5" role="alert">
@@ -61,6 +79,19 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div className="field">
+              <label htmlFor="name">Full name</label>
+              <input
+                id="name"
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input"
+                placeholder="e.g. Arifa Rahman"
+              />
+            </div>
+
+            <div className="field">
               <label htmlFor="email">Email</label>
               <input
                 id="email"
@@ -68,42 +99,55 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 className="input"
                 placeholder="you@institution.edu"
               />
             </div>
 
-            <div className="field">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="input"
-                placeholder="Your password"
-              />
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="field">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input"
+                  placeholder="Min. 6 characters"
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="confirm">Confirm password</label>
+                <input
+                  id="confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  className="input"
+                  placeholder="Repeat password"
+                />
+              </div>
             </div>
 
             <button type="submit" disabled={loading} className="btn btn-primary w-full">
               {loading ? (
                 <>
                   <span className="spinner border-white/40 border-t-white" aria-hidden="true" />
-                  Signing in…
+                  Creating account…
                 </>
               ) : (
-                "Sign in"
+                "Create account"
               )}
             </button>
           </form>
         </div>
 
         <div className="auth-link">
-          No account yet?{" "}
-          <Link href="/register">Register as a student</Link>
+          Already have an account?{" "}
+          <Link href="/login">Sign in</Link>
         </div>
       </div>
     </div>

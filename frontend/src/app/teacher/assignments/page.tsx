@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { Assignment, CreateAssignmentDto, ClassSubjectDto } from "@/lib/types";
-import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function TeacherAssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -86,7 +86,7 @@ export default function TeacherAssignmentsPage() {
       return;
     }
     try {
-      const teacherId = await getTeacherId();
+      const teacherId = getStoredUser()?.id ?? "";
       const payload = { ...formData, teacherId };
       if (editingAssignment) {
         await api.put(`/api/teacher/assignments/${editingAssignment.id}`, payload);
@@ -101,11 +101,6 @@ export default function TeacherAssignmentsPage() {
     }
   };
 
-  const getTeacherId = async (): Promise<string> => {
-    const storedUser = getStoredUser();
-    return storedUser?.id ?? "";
-  };
-
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this assignment?")) return;
     try {
@@ -116,58 +111,67 @@ export default function TeacherAssignmentsPage() {
     }
   };
 
+  const stampClass = (status: string) =>
+    status === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
+
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
       <DashboardLayout allowedRoles={["Teacher"]}>
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Assignments</h1>
-            <button
-              onClick={openCreateModal}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center gap-2"
-            >
-              <PlusIcon className="w-5 h-5" />
+          <div className="title-block">
+            <h1>My Assignments</h1>
+            <button onClick={openCreateModal} className="btn btn-primary">
+              <PlusIcon className="w-4 h-4" />
               Create Assignment
             </button>
           </div>
 
           {loading ? (
-            <div className="text-center py-12">Loading...</div>
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="empty-state">You have not created any assignments yet.</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
+            <div className="sheet overflow-x-auto">
+              <table className="table-sheet">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left">Title</th>
-                    <th className="px-4 py-2 text-left">Class</th>
-                    <th className="px-4 py-2 text-left">Subject</th>
-                    <th className="px-4 py-2 text-left">Deadline</th>
-                    <th className="px-4 py-2 text-left">Marks</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Actions</th>
+                  <tr>
+                    <th>Title</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Deadline</th>
+                    <th>Marks</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assignments.map((a) => (
-                    <tr key={a.id} className="border-b">
-                      <td className="px-4 py-3 font-medium">{a.title}</td>
-                      <td className="px-4 py-3">{a.className}</td>
-                      <td className="px-4 py-3">{a.subjectName}</td>
-                      <td className="px-4 py-3">{new Date(a.deadline).toLocaleString()}</td>
-                      <td className="px-4 py-3">{a.maxMarks}</td>
-                      <td className="px-4 py-3 capitalize">{a.status.toLowerCase()}</td>
-                      <td className="px-4 py-3">
+                    <tr key={a.id}>
+                      <td className="font-medium">{a.title}</td>
+                      <td>{a.className}</td>
+                      <td>{a.subjectName}</td>
+                      <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
+                      <td className="tnum">{a.maxMarks}</td>
+                      <td>
+                        <span className={stampClass(a.status)}>{a.status}</span>
+                      </td>
+                      <td className="whitespace-nowrap">
                         <button
+                          className="icon-btn"
                           onClick={() => openEditModal(a)}
-                          className="text-blue-600 hover:text-blue-800 mr-2"
+                          aria-label={`Edit ${a.title}`}
                         >
-                          <PencilIcon className="w-5 h-5 inline" />
+                          <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
+                          className="icon-btn icon-btn-danger"
                           onClick={() => handleDelete(a.id)}
-                          className="text-red-600 hover:text-red-800"
+                          aria-label={`Delete ${a.title}`}
                         >
-                          <TrashIcon className="w-5 h-5 inline" />
+                          <TrashIcon className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -178,86 +182,92 @@ export default function TeacherAssignmentsPage() {
           )}
 
           {showModal && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-semibold mb-4">
-                  {editingAssignment ? "Edit Assignment" : "Create Assignment"}
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Title</label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Class-Subject</label>
-                    <select
-                      value={formData.classSubjectId}
-                      onChange={(e) => setFormData({ ...formData, classSubjectId: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Select a class-subject</option>
-                      {classSubjects.map((cs) => (
-                        <option key={cs.id} value={cs.id}>
-                          {cs.className} - {cs.subjectName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Deadline</label>
-                    <input
-                      type="datetime-local"
-                      value={formData.deadline}
-                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Max Marks</label>
-                    <input
-                      type="number"
-                      value={formData.maxMarks}
-                      onChange={(e) => setFormData({ ...formData, maxMarks: parseInt(e.target.value) || 0 })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as "Draft" | "Published" })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="Draft">Draft</option>
-                      <option value="Published">Published</option>
-                    </select>
+            <div
+              className="modal-overlay"
+              onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+            >
+              <div className="modal-sheet">
+                <div className="modal-head">
+                  <h2>{editingAssignment ? "Edit Assignment" : "Create Assignment"}</h2>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setShowModal(false)}
+                    aria-label="Close"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="space-y-4">
+                    <div className="field">
+                      <label>Title</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Description</label>
+                      <textarea
+                        className="textarea"
+                        rows={4}
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Class-Subject</label>
+                      <select
+                        className="select"
+                        value={formData.classSubjectId}
+                        onChange={(e) => setFormData({ ...formData, classSubjectId: e.target.value })}
+                      >
+                        <option value="">Select a class-subject</option>
+                        {classSubjects.map((cs) => (
+                          <option key={cs.id} value={cs.id}>
+                            {cs.className} - {cs.subjectName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Deadline</label>
+                      <input
+                        type="datetime-local"
+                        className="input"
+                        value={formData.deadline}
+                        onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Max Marks</label>
+                      <input
+                        type="number"
+                        className="input"
+                        value={formData.maxMarks}
+                        onChange={(e) => setFormData({ ...formData, maxMarks: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Status</label>
+                      <select
+                        className="select"
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as "Draft" | "Published" })}
+                      >
+                        <option value="Draft">Draft</option>
+                        <option value="Published">Published</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                  >
+                <div className="modal-foot">
+                  <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
+                  <button className="btn btn-primary" onClick={handleSubmit}>
                     Save
                   </button>
                 </div>

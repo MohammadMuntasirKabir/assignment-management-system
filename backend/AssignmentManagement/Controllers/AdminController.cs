@@ -59,6 +59,10 @@ public class AdminController : ControllerBase
     [HttpPut("users/{id:guid}")]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDto dto)
     {
+        var currentUserId = _authService.GetUserIdFromToken(User);
+        if (id == currentUserId && dto.Role != UserRole.Admin)
+            return BadRequest(new { message = "You cannot change your own admin role" });
+
         var user = await _context.Users.FindAsync(id);
         if (user == null)
             return NotFound(new { message = "User not found" });
@@ -78,6 +82,10 @@ public class AdminController : ControllerBase
     [HttpDelete("users/{id:guid}")]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
+        var currentUserId = _authService.GetUserIdFromToken(User);
+        if (id == currentUserId)
+            return BadRequest(new { message = "You cannot delete your own account" });
+
         var user = await _context.Users.FindAsync(id);
         if (user == null)
             return NotFound(new { message = "User not found" });
