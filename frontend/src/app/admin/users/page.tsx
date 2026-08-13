@@ -5,7 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/components/AuthProvider";
 import api, { getErrorMessage } from "@/lib/api";
-import { User } from "@/lib/types";
+import { AuthResponse, User } from "@/lib/types";
 import { roleNumberToRole, roleToNumber } from "@/lib/auth";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
@@ -14,23 +14,18 @@ interface UserForm {
   email: string;
   password: string;
   role: number;
-  isActive: boolean;
-}
-
-function roleStamp(role: string) {
-  const cls =
-    role === "Admin" ? "stamp-purple" : role === "Teacher" ? "stamp-blue" : "stamp-green";
-  return <span className={`stamp ${cls}`}>{role}</span>;
 }
 
 export default function AdminUsersPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, setSession, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserForm>({
-    name: "", email: "", password: "", role: 2, isActive: true
+    name: "", email: "", password: "", role: 2
   });
+  const [transferSelfRole, setTransferSelfRole] = useState<number | null>(null);
+  const [transferDeleteSelf, setTransferDeleteSelf] = useState(false);
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -60,7 +55,9 @@ export default function AdminUsersPage() {
 
   const openCreateModal = () => {
     setEditingUser(null);
-    setFormData({ name: "", email: "", password: "", role: 2, isActive: true });
+    setFormData({ name: "", email: "", password: "", role: 2 });
+    setTransferSelfRole(null);
+    setTransferDeleteSelf(false);
     setModalError("");
     setShowModal(true);
   };
@@ -72,8 +69,9 @@ export default function AdminUsersPage() {
       email: user.email,
       password: "",
       role: roleToNumber(user.role),
-      isActive: user.isActive,
     });
+    setTransferSelfRole(null);
+    setTransferDeleteSelf(false);
     setModalError("");
     setShowModal(true);
   };
@@ -85,13 +83,43 @@ export default function AdminUsersPage() {
     }
     setSaving(true);
     setModalError("");
+
+    const isTransferringAdmin =
+      editingUser !== null && !isSelf(editingUser) && formData.role === 0;
+
+    if (isTransferringAdmin) {
+      if (!transferDeleteSelf && !transferSelfRole) {
+        setModalError("Choose a new role for your account or delete it.");
+        setSaving(false);
+        return;
+      }
+      try {
+        const res = await api.post<{ currentSession: AuthResponse | null; deletedSelf: boolean }>(
+          "/api/admin/transfer-admin",
+          {
+            targetUserId: editingUser!.id,
+            selfRole: transferDeleteSelf ? undefined : transferSelfRole,
+            deleteSelf: transferDeleteSelf,
+          }
+        );
+        if (transferDeleteSelf) {
+          logout();
+        } else if (res.data.currentSession) {
+          setSession(res.data.currentSession);
+        }
+      } catch (err) {
+        setModalError(getErrorMessage(err, "Failed to transfer the admin role"));
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
       if (editingUser) {
         await api.put(`/api/admin/users/${editingUser.id}`, {
           name: formData.name,
           email: formData.email,
           role: formData.role,
-          isActive: formData.isActive,
         });
       } else {
         if (!formData.password) {
@@ -171,16 +199,7 @@ export default function AdminUsersPage() {
                         )}
                       </td>
                       <td className="tnum text-[var(--ink-soft)]">{user.email}</td>
-                      <td>
-                        <div className="flex items-center justify-center gap-1.5">
-                          {roleStamp(user.role)}
-                          {user.isActive ? (
-                            <span className="stamp stamp-green">Active</span>
-                          ) : (
-                            <span className="stamp stamp-gray">Inactive</span>
-                          )}
-                        </div>
-                      </td>
+                      <td className="font-semibold text-[var(--blue-ink)]">{user.role}</td>
                       <td className="tnum text-[var(--ink-soft)]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
@@ -268,7 +287,14 @@ export default function AdminUsersPage() {
                   <select
                     id="user-role"
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: parseInt(e.target.value) })}
+                    onChange={(e) => {
+                      const role = parseInt(e.target.value);
+                      setFormData({ ...formData, role });
+                      if (role !== 0) {
+                        setTransferSelfRole(null);
+                        setTransferDeleteSelf(false);
+                      }
+                    }}
                     className="select"
                     disabled={editingUser ? isSelf(editingUser) : false}
                   >
@@ -281,24 +307,49 @@ export default function AdminUsersPage() {
                   )}
                 </div>
 
-                <div className="field">
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="user-active"
-                      type="checkbox"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="accent-[var(--blue)]"
-                      disabled={editingUser ? isSelf(editingUser) : false}
-                    />
-                    <label htmlFor="user-active" className="!normal-case !tracking-normal cursor-pointer select-none">
-                      Active account
-                    </label>
+                {editingUser && !isSelf(editingUser) && formData.role === 0 && (
+                  <div className="space-y-3">
+                    <div className="notice">
+                      There can only be one admin. Selecting an Admin transfers the
+                      role — choose a new role for your account or delete it.
+                    </div>
+                    <div className="field">
+                      <label htmlFor="transfer-role">Your new role</label>
+                      <select
+                        id="transfer-role"
+                        value={transferSelfRole ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? null : parseInt(e.target.value);
+                          setTransferSelfRole(v);
+                          if (v) setTransferDeleteSelf(false);
+                        }}
+                        className="select"
+                        disabled={transferDeleteSelf}
+                      >
+                        <option value="" disabled>Select a role…</option>
+                        <option value={1}>Teacher</option>
+                        <option value={2}>Student</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="transfer-delete"
+                          type="checkbox"
+                          checked={transferDeleteSelf}
+                          onChange={(e) => {
+                            setTransferDeleteSelf(e.target.checked);
+                            if (e.target.checked) setTransferSelfRole(null);
+                          }}
+                          className="accent-[var(--blue)]"
+                        />
+                        <label htmlFor="transfer-delete" className="!normal-case !tracking-normal cursor-pointer select-none">
+                          Delete my account instead
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  {editingUser && isSelf(editingUser) && (
-                    <p className="field-error">You cannot deactivate your own account.</p>
-                  )}
-                </div>
+                )}
               </div>
               <div className="modal-foot">
                 <button onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={saving}>

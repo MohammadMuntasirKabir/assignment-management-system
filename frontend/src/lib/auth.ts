@@ -12,7 +12,6 @@ export function saveAuthData(response: AuthResponse): void {
     name: response.name,
     email: response.email,
     role: roleNumberToRole(response.role),
-    isActive: true,
     createdAt: new Date().toISOString(),
   };
   Cookies.set(USER_COOKIE, JSON.stringify(user), { expires: maxAgeDays, sameSite: "strict" });

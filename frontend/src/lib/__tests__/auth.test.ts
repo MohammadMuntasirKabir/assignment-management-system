@@ -65,7 +65,6 @@ describe("auth helpers", () => {
         name: "Alice",
         email: "alice@example.com",
         role: "Teacher",
-        isActive: true,
         createdAt: expect.any(String),
       });
     });

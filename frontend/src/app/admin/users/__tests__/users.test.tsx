@@ -5,6 +5,8 @@ const mockGet = jest.fn();
 const mockPut = jest.fn();
 const mockPost = jest.fn();
 const mockDelete = jest.fn();
+const mockSetSession = jest.fn();
+const mockLogout = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -14,8 +16,9 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/components/AuthProvider", () => ({
   useAuth: () => ({
     login: jest.fn(),
-    logout: jest.fn(),
-    user: { id: "u3", name: "Charlie", email: "admin@example.com", role: "Admin", isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+    logout: mockLogout,
+    setSession: mockSetSession,
+    user: { id: "u3", name: "Charlie", email: "admin@example.com", role: "Admin", createdAt: "2026-01-01T00:00:00Z" },
     loading: false,
   }),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -44,9 +47,9 @@ jest.mock("@/lib/api", () => ({
 }));
 
 const users = [
-  { id: "u1", name: "Alice", email: "alice@example.com", role: 1, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
-  { id: "u2", name: "Bob", email: "bob@example.com", role: 2, isActive: false, createdAt: "2026-01-01T00:00:00Z" },
-  { id: "u3", name: "Charlie", email: "admin@example.com", role: 0, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+  { id: "u1", name: "Alice", email: "alice@example.com", role: 1, createdAt: "2026-01-01T00:00:00Z" },
+  { id: "u2", name: "Bob", email: "bob@example.com", role: 2, createdAt: "2026-01-01T00:00:00Z" },
+  { id: "u3", name: "Charlie", email: "admin@example.com", role: 0, createdAt: "2026-01-01T00:00:00Z" },
 ];
 
 describe("AdminUsersPage", () => {
@@ -55,7 +58,7 @@ describe("AdminUsersPage", () => {
     mockGet.mockResolvedValue({ data: users });
   });
 
-  it("renders role names as stamps instead of numeric boxes", async () => {
+  it("renders role names as plain text instead of numeric boxes", async () => {
     render(<AdminUsersPage />);
 
     await waitFor(() => {
@@ -66,13 +69,15 @@ describe("AdminUsersPage", () => {
     expect(screen.queryByText(/^[0-2]$/)).not.toBeInTheDocument();
   });
 
-  it("shows active and inactive status for each account", async () => {
+  it("shows only the role in the role column", async () => {
     render(<AdminUsersPage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Active")).toHaveLength(2);
+      expect(screen.getByText("Teacher")).toBeInTheDocument();
     });
-    expect(screen.getByText("Inactive")).toBeInTheDocument();
+    expect(screen.getByText("Student")).toBeInTheDocument();
+    expect(screen.queryByText("Active")).not.toBeInTheDocument();
+    expect(screen.queryByText("Inactive")).not.toBeInTheDocument();
   });
 
   it("prefills the correct role when editing a user", async () => {
@@ -88,7 +93,7 @@ describe("AdminUsersPage", () => {
     });
   });
 
-  it("sends the edited role and active state on save", async () => {
+  it("sends the edited role on save", async () => {
     mockPut.mockResolvedValue({ status: 204 });
     mockGet.mockResolvedValueOnce({ data: users }).mockResolvedValueOnce({ data: users });
 
@@ -110,12 +115,11 @@ describe("AdminUsersPage", () => {
         name: "Bob",
         email: "bob@example.com",
         role: 1,
-        isActive: false,
       });
     });
   });
 
-  it("disables role and active controls for your own account", async () => {
+  it("disables role control for your own account", async () => {
     render(<AdminUsersPage />);
 
     await waitFor(() => {
@@ -125,7 +129,105 @@ describe("AdminUsersPage", () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText("Role")).toBeDisabled();
-      expect(screen.getByLabelText("Active account")).toBeDisabled();
     });
+  });
+
+  it("transfers admin and demotes self when promoting to Admin", async () => {
+    mockPost.mockResolvedValue({
+      data: {
+        currentSession: {
+          userId: "u3",
+          name: "Charlie",
+          email: "admin@example.com",
+          role: 1,
+          token: "t1",
+          expiresAt: "2026-08-08T00:00:00Z",
+        },
+        deletedSelf: false,
+      },
+    });
+    mockGet.mockResolvedValueOnce({ data: users });
+
+    render(<AdminUsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Edit Bob" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit Bob" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Role")).toHaveValue("2");
+    });
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "0" } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Your new role")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText("Your new role"), { target: { value: "1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith("/api/admin/transfer-admin", {
+        targetUserId: "u2",
+        selfRole: 1,
+        deleteSelf: false,
+      });
+    });
+    expect(mockSetSession).toHaveBeenCalled();
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it("deletes own account when transferring admin", async () => {
+    mockPost.mockResolvedValue({ data: { currentSession: null, deletedSelf: true } });
+    mockGet.mockResolvedValueOnce({ data: users });
+
+    render(<AdminUsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Edit Bob" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit Bob" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Role")).toHaveValue("2");
+    });
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "0" } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Your new role")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText(/Delete my account/));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith("/api/admin/transfer-admin", {
+        targetUserId: "u2",
+        selfRole: undefined,
+        deleteSelf: true,
+      });
+    });
+    expect(mockLogout).toHaveBeenCalled();
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it("requires a self role or deletion when transferring admin", async () => {
+    mockGet.mockResolvedValueOnce({ data: users });
+
+    render(<AdminUsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Edit Bob" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit Bob" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Role")).toHaveValue("2");
+    });
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "0" } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Your new role")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Choose a new role/);
+    expect(mockPost).not.toHaveBeenCalled();
   });
 });

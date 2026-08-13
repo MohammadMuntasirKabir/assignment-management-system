@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 
 namespace AssignmentManagement.Tests;
 
@@ -62,21 +61,6 @@ public class AuthTests : IDisposable
         await TestHelpers.SeedTestDataAsync(_context);
 
         var dto = new LoginDto { Email = "admin@example.com", Password = "wrongpassword" };
-        var result = await _authService.LoginAsync(dto);
-
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task Login_DeactivatedUser_ReturnsNull()
-    {
-        await TestHelpers.SeedTestDataAsync(_context);
-
-        var teacher = await _context.Users.FirstAsync(u => u.Email == "teacher@example.com");
-        teacher.IsActive = false;
-        await _context.SaveChangesAsync();
-
-        var dto = new LoginDto { Email = "teacher@example.com", Password = "teacher123" };
         var result = await _authService.LoginAsync(dto);
 
         result.Should().BeNull();
@@ -187,30 +171,28 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Login_DeactivatedAccount_ReturnsForbidden()
+    public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
-        var service = new CapturingAuthService(_ => null, UserStatus.Inactive);
+        var service = new CapturingAuthService(_ => null);
         var controller = new AuthController(service);
 
         var result = await controller.Login(new LoginDto
         {
             Email = "user@example.com",
-            Password = "password123"
+            Password = "wrongpassword"
         });
 
-        var statusResult = Assert.IsType<ObjectResult>(result.Result);
-        statusResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var statusResult = Assert.IsType<UnauthorizedObjectResult>(result.Result);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
     }
 
     private class CapturingAuthService : IAuthService
     {
         private readonly Func<RegisterDto, AuthResponseDto?> _onRegister;
-        private readonly UserStatus? _status;
 
-        public CapturingAuthService(Func<RegisterDto, AuthResponseDto?> onRegister, UserStatus? status = null)
+        public CapturingAuthService(Func<RegisterDto, AuthResponseDto?> onRegister)
         {
             _onRegister = onRegister;
-            _status = status;
         }
 
         public Task<AuthResponseDto?> LoginAsync(LoginDto dto) => Task.FromResult<AuthResponseDto?>(null);
@@ -220,7 +202,7 @@ public class AuthControllerTests
 
         public Task<User?> CreateUserAsync(RegisterDto dto) => Task.FromResult<User?>(null);
 
-        public Task<UserStatus> GetUserStatusAsync(string email) => Task.FromResult(_status ?? UserStatus.NotFound);
+        public AuthResponseDto BuildAuthResponse(User user) => new();
 
         public Guid GetUserIdFromToken(System.Security.Claims.ClaimsPrincipal user) => Guid.Empty;
 

@@ -356,7 +356,7 @@ public class FakeAuthService : IAuthService
 
     public Task<User?> CreateUserAsync(RegisterDto dto) => Task.FromResult<User?>(null);
 
-    public Task<UserStatus> GetUserStatusAsync(string email) => Task.FromResult(UserStatus.NotFound);
+    public AuthResponseDto BuildAuthResponse(User user) => new();
 
     public Guid GetUserIdFromToken(ClaimsPrincipal user) => _userId;
 

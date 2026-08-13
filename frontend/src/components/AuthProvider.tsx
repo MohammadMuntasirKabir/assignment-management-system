@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (name: string, email: string, password: string) => Promise<AuthResponse>;
   logout: () => void;
+  setSession: (response: AuthResponse) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: authResponse.name,
       email: authResponse.email,
       role: roleNumberToRole(authResponse.role),
-      isActive: true,
       createdAt: new Date().toISOString(),
     });
     return authResponse;
@@ -61,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: authResponse.name,
       email: authResponse.email,
       role: roleNumberToRole(authResponse.role),
-      isActive: true,
       createdAt: new Date().toISOString(),
     });
     return authResponse;
@@ -73,8 +72,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   };
 
+  const setSession = (response: AuthResponse) => {
+    saveAuthData(response);
+    setUser({
+      id: response.userId,
+      name: response.name,
+      email: response.email,
+      role: roleNumberToRole(response.role),
+      createdAt: new Date().toISOString(),
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, setSession }}>
       {children}
     </AuthContext.Provider>
   );

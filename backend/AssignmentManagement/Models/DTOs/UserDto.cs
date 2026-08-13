@@ -9,7 +9,6 @@ public class UserResponseDto
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public UserRole Role { get; set; }
-    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
 }
 
@@ -26,13 +25,22 @@ public class UpdateUserDto
 
     [EnumDataType(typeof(UserRole), ErrorMessage = "Invalid role")]
     public UserRole Role { get; set; } = UserRole.Student;
-
-    public bool IsActive { get; set; } = true;
 }
 
-public enum UserStatus
+public class AdminTransferDto
 {
-    Active,
-    Inactive,
-    NotFound
+    [Required(ErrorMessage = "Target account is required")]
+    public Guid TargetUserId { get; set; }
+
+    [EnumDataType(typeof(UserRole), ErrorMessage = "Invalid role")]
+    public UserRole? SelfRole { get; set; }
+
+    public bool DeleteSelf { get; set; }
+}
+
+public class AdminTransferResultDto
+{
+    public UserResponseDto Target { get; set; } = new();
+    public AuthResponseDto? CurrentSession { get; set; }
+    public bool DeletedSelf { get; set; }
 }

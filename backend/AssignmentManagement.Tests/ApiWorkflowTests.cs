@@ -535,7 +535,7 @@ public class ApiWorkflowTests : IDisposable
     }
 
     [Fact]
-    public async Task Admin_UpdateUser_CanDeactivate()
+    public async Task Admin_CannotPromoteViaUpdate_ReturnsBadRequest()
     {
         var data = await SetupAsync();
         var controller = TestHelpers.CreateAdminController(_context);
@@ -544,36 +544,29 @@ public class ApiWorkflowTests : IDisposable
         {
             Name = data.Teacher1.Name,
             Email = data.Teacher1.Email,
-            Role = UserRole.Teacher,
-            IsActive = false
-        });
-
-        result.Should().BeOfType<NoContentResult>();
-        var updated = await _context.Users.FindAsync(data.Teacher1.Id);
-        updated!.IsActive.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task Admin_CannotDeactivateSelf_ReturnsBadRequest()
-    {
-        var data = await SetupAsync();
-        var controller = TestHelpers.CreateAdminController(_context);
-        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
-        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
-            new ClaimsIdentity(new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
-            }, "test"));
-
-        var result = await controller.UpdateUser(data.Admin.Id, new UpdateUserDto
-        {
-            Name = data.Admin.Name,
-            Email = data.Admin.Email,
-            Role = UserRole.Admin,
-            IsActive = false
+            Role = UserRole.Admin
         });
 
         StatusCodeOf(result).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Admin_CannotCreateAdminAccount_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.CreateUser(new RegisterDto
+        {
+            Name = "Wannabe Admin",
+            Email = "wannabe@example.com",
+            Password = "password123",
+            Role = UserRole.Admin
+        });
+
+        StatusCodeOf(result.Result).Should().Be(400);
+        (await _context.Users.FirstOrDefaultAsync(u => u.Email == "wannabe@example.com"))
+            .Should().BeNull();
     }
 
     [Fact]
@@ -620,6 +613,138 @@ public class ApiWorkflowTests : IDisposable
             Name = data.Admin.Name,
             Email = data.Admin.Email,
             Role = UserRole.Teacher
+        });
+
+        StatusCodeOf(result).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Admin_Transfer_PromotesTargetAndDemotesSelf()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.TransferAdmin(new AdminTransferDto
+        {
+            TargetUserId = data.Teacher1.Id,
+            SelfRole = UserRole.Teacher
+        });
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        okResult.StatusCode.Should().Be(200);
+
+        var target = await _context.Users.FindAsync(data.Teacher1.Id);
+        var caller = await _context.Users.FindAsync(data.Admin.Id);
+        target!.Role.Should().Be(UserRole.Admin);
+        caller!.Role.Should().Be(UserRole.Teacher);
+
+        var admins = await _context.Users.CountAsync(u => u.Role == UserRole.Admin);
+        admins.Should().Be(1, "there can only be one admin");
+
+        var payload = Assert.IsType<AdminTransferResultDto>(okResult.Value);
+        payload.DeletedSelf.Should().BeFalse();
+        payload.Target.Id.Should().Be(data.Teacher1.Id);
+        payload.Target.Role.Should().Be(UserRole.Admin);
+        payload.CurrentSession.Should().NotBeNull();
+        payload.CurrentSession!.Role.Should().Be(UserRole.Teacher);
+        payload.CurrentSession.Token.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task Admin_Transfer_DeleteSelf_PromotesTarget()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.TransferAdmin(new AdminTransferDto
+        {
+            TargetUserId = data.Teacher1.Id,
+            DeleteSelf = true
+        });
+
+        Assert.IsType<OkObjectResult>(result).Should().NotBeNull();
+
+        (await _context.Users.FindAsync(data.Admin.Id)).Should().BeNull();
+        var target = await _context.Users.FindAsync(data.Teacher1.Id);
+        target!.Role.Should().Be(UserRole.Admin);
+
+        var admins = await _context.Users.CountAsync(u => u.Role == UserRole.Admin);
+        admins.Should().Be(1, "there can only be one admin");
+    }
+
+    [Fact]
+    public async Task Admin_Transfer_RequiresRoleOrDelete_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.TransferAdmin(new AdminTransferDto
+        {
+            TargetUserId = data.Teacher1.Id
+        });
+
+        StatusCodeOf(result).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Admin_Transfer_ToSelf_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.TransferAdmin(new AdminTransferDto
+        {
+            TargetUserId = data.Admin.Id,
+            DeleteSelf = true
+        });
+
+        StatusCodeOf(result).Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Admin_Transfer_ToExistingAdmin_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var secondAdmin = await _context.Users.FindAsync(data.Teacher1.Id);
+        secondAdmin!.Role = UserRole.Admin;
+        await _context.SaveChangesAsync();
+
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.TransferAdmin(new AdminTransferDto
+        {
+            TargetUserId = data.Teacher1.Id,
+            DeleteSelf = true
         });
 
         StatusCodeOf(result).Should().Be(400);

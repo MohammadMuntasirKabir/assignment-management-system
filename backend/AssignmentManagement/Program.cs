@@ -79,7 +79,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
-app.UseMiddleware<AssignmentManagement.Middleware.ActiveUserMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

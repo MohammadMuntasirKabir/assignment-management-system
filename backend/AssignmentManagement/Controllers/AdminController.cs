@@ -33,7 +33,6 @@ public class AdminController : ControllerBase
                 Name = u.Name,
                 Email = u.Email,
                 Role = u.Role,
-                IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt
             })
             .ToListAsync();
@@ -43,6 +42,9 @@ public class AdminController : ControllerBase
     [HttpPost("users")]
     public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] RegisterDto dto)
     {
+        if (dto.Role == UserRole.Admin)
+            return BadRequest(new { message = "There can only be one admin. Select an existing account to take over the admin role instead." });
+
         var user = await _authService.CreateUserAsync(dto);
         if (user == null)
             return Conflict(new { message = "User with this email already exists" });
@@ -53,7 +55,6 @@ public class AdminController : ControllerBase
             Name = user.Name,
             Email = user.Email,
             Role = user.Role,
-            IsActive = user.IsActive,
             CreatedAt = user.CreatedAt
         });
     }
@@ -63,9 +64,9 @@ public class AdminController : ControllerBase
     {
         var currentUserId = _authService.GetUserIdFromToken(User);
         if (id == currentUserId && dto.Role != UserRole.Admin)
-            return BadRequest(new { message = "You cannot change your own admin role" });
-        if (id == currentUserId && !dto.IsActive)
-            return BadRequest(new { message = "You cannot deactivate your own account" });
+            return BadRequest(new { message = "You cannot change your own role. Transfer the admin role to another account instead." });
+        if (id != currentUserId && dto.Role == UserRole.Admin)
+            return BadRequest(new { message = "There can only be one admin. Use the admin transfer option to select a new admin." });
 
         var user = await _context.Users.FindAsync(id);
         if (user == null)
@@ -78,7 +79,6 @@ public class AdminController : ControllerBase
         user.Name = dto.Name;
         user.Email = dto.Email;
         user.Role = dto.Role;
-        user.IsActive = dto.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return NoContent();
@@ -98,6 +98,59 @@ public class AdminController : ControllerBase
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpPost("transfer-admin")]
+    public async Task<IActionResult> TransferAdmin([FromBody] AdminTransferDto dto)
+    {
+        var currentUserId = _authService.GetUserIdFromToken(User);
+        if (dto.TargetUserId == currentUserId)
+            return BadRequest(new { message = "You cannot select yourself as the new admin" });
+
+        var target = await _context.Users.FindAsync(dto.TargetUserId);
+        if (target == null)
+            return NotFound(new { message = "Target account not found" });
+        if (target.Role == UserRole.Admin)
+            return BadRequest(new { message = "That account is already the admin" });
+
+        var current = await _context.Users.FindAsync(currentUserId);
+        if (current == null || current.Role != UserRole.Admin)
+            return BadRequest(new { message = "Only the admin can transfer the admin role" });
+
+        var demotingSelf = !dto.DeleteSelf && dto.SelfRole.HasValue && dto.SelfRole.Value != UserRole.Admin;
+        if (!dto.DeleteSelf && !demotingSelf)
+            return BadRequest(new { message = "After selecting a new admin, choose a new role for your account or delete it" });
+
+        target.Role = UserRole.Admin;
+        target.UpdatedAt = DateTime.UtcNow;
+
+        AuthResponseDto? demotedSession = null;
+        if (dto.DeleteSelf)
+        {
+            _context.Users.Remove(current);
+        }
+        else
+        {
+            current.Role = dto.SelfRole!.Value;
+            current.UpdatedAt = DateTime.UtcNow;
+            demotedSession = _authService.BuildAuthResponse(current);
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest(new { message = "Cannot delete your account while it still owns classes or assignments. Choose a new role instead, or transfer that work first." });
+        }
+
+        return Ok(new AdminTransferResultDto
+        {
+            Target = new UserResponseDto { Id = target.Id, Name = target.Name, Email = target.Email, Role = target.Role, CreatedAt = target.CreatedAt },
+            CurrentSession = demotedSession,
+            DeletedSelf = dto.DeleteSelf
+        });
     }
 
     // Classes
