@@ -29,8 +29,24 @@ export default function StudentDashboard() {
     fetchData();
   }, []);
 
+  const submittedIds = new Set(submissions.map((s) => s.assignmentId));
+
+  const isOverdue = (a: Assignment) => new Date() > new Date(a.deadline);
+
+  const availableAssignments = assignments.filter((a) => submittedIds.has(a.id) || !isOverdue(a));
+  const availableCount = availableAssignments.length;
   const pendingCount = submissions.filter(s => s.status === "Submitted" || s.status === "Late").length;
   const gradedCount = submissions.filter(s => s.status === "Reviewed").length;
+
+  const assignmentRibbon = (a: Assignment) => {
+    if (submittedIds.has(a.id)) {
+      return <span className="stamp stamp-green whitespace-nowrap">Submitted</span>;
+    }
+    if (isOverdue(a)) {
+      return <span className="stamp stamp-red whitespace-nowrap">Overdue</span>;
+    }
+    return <span className="stamp stamp-blue whitespace-nowrap">Due</span>;
+  };
 
   const stampClass = (status: string) => {
     switch (status) {
@@ -57,7 +73,7 @@ export default function StudentDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="stat-block">
               <div className="stat-label">Available Assignments</div>
-              <div className="stat-value">{assignments.length}</div>
+              <div className="stat-value">{availableCount}</div>
             </div>
             <div className="stat-block">
               <div className="stat-label">Pending Review</div>
@@ -78,7 +94,7 @@ export default function StudentDashboard() {
             <>
               <div className="sheet overflow-x-auto mb-6">
                 <div className="anno px-4 pt-4">My Assignments</div>
-                {assignments.length === 0 ? (
+                {availableAssignments.length === 0 ? (
                   <div className="empty-state">No assignments available.</div>
                 ) : (
                   <table className="table-sheet">
@@ -91,17 +107,13 @@ export default function StudentDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {assignments.map((a) => (
+                      {availableAssignments.map((a) => (
                         <tr key={a.id}>
                           <td className="font-medium">{a.title}</td>
                           <td>{a.subjectName}</td>
                           <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                           <td>
-                            {new Date() > new Date(a.deadline) ? (
-                              <span className="stamp stamp-red">Past due</span>
-                            ) : (
-                              <span className="stamp stamp-blue">Due soon</span>
-                            )}
+                            {assignmentRibbon(a)}
                           </td>
                         </tr>
                       ))}
