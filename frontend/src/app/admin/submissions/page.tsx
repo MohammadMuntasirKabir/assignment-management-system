@@ -49,7 +49,6 @@ export default function AdminSubmissionsPage() {
                   <tr>
                     <th>Assignment</th>
                     <th>Student</th>
-                    <th>Status</th>
                     <th>Marks</th>
                     <th>Submitted</th>
                   </tr>
@@ -59,7 +58,6 @@ export default function AdminSubmissionsPage() {
                     <tr key={s.id}>
                       <td className="font-medium">{s.assignmentTitle}</td>
                       <td>{s.studentName}</td>
-                      <td className="text-sm text-[var(--ink-soft)]">{s.status}</td>
                       <td className="tnum">{s.marks ?? "Not graded"}</td>
                       <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
