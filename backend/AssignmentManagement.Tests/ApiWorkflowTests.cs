@@ -535,6 +535,48 @@ public class ApiWorkflowTests : IDisposable
     }
 
     [Fact]
+    public async Task Admin_UpdateUser_CanDeactivate()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.UpdateUser(data.Teacher1.Id, new UpdateUserDto
+        {
+            Name = data.Teacher1.Name,
+            Email = data.Teacher1.Email,
+            Role = UserRole.Teacher,
+            IsActive = false
+        });
+
+        result.Should().BeOfType<NoContentResult>();
+        var updated = await _context.Users.FindAsync(data.Teacher1.Id);
+        updated!.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Admin_CannotDeactivateSelf_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.UpdateUser(data.Admin.Id, new UpdateUserDto
+        {
+            Name = data.Admin.Name,
+            Email = data.Admin.Email,
+            Role = UserRole.Admin,
+            IsActive = false
+        });
+
+        StatusCodeOf(result).Should().Be(400);
+    }
+
+    [Fact]
     public async Task Admin_CreateClassSubject_Duplicate_ReturnsConflict()
     {
         var data = await SetupAsync();

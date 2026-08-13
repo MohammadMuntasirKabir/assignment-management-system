@@ -12,6 +12,7 @@ public interface IAuthService
     Task<AuthResponseDto?> LoginAsync(LoginDto dto);
     Task<AuthResponseDto?> RegisterAsync(RegisterDto dto);
     Task<User?> CreateUserAsync(RegisterDto dto);
+    Task<UserStatus> GetUserStatusAsync(string email);
     Guid GetUserIdFromToken(ClaimsPrincipal user);
     UserRole GetUserRoleFromToken(ClaimsPrincipal user);
 }
@@ -33,9 +34,19 @@ public class AuthService : IAuthService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null) return null;
 
+        if (!user.IsActive) return null;
+
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
         return CreateAuthResponse(user);
+    }
+
+    public async Task<UserStatus> GetUserStatusAsync(string email)
+    {
+        var normalized = NormalizeEmail(email);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalized);
+        if (user == null) return UserStatus.NotFound;
+        return user.IsActive ? UserStatus.Active : UserStatus.Inactive;
     }
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)

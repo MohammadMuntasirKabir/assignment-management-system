@@ -29,6 +29,7 @@ CREATE TABLE "Users" (
     "Email" text NOT NULL,
     "PasswordHash" text NOT NULL,
     "Role" text NOT NULL,
+    "IsActive" boolean NOT NULL DEFAULT TRUE,
     "CreatedAt" timestamp with time zone NOT NULL,
     "UpdatedAt" timestamp with time zone,
     CONSTRAINT "PK_Users" PRIMARY KEY ("Id")

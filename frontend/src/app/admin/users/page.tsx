@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/components/AuthProvider";
 import api, { getErrorMessage } from "@/lib/api";
 import { User } from "@/lib/types";
+import { roleNumberToRole, roleToNumber } from "@/lib/auth";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface UserForm {
@@ -13,9 +14,8 @@ interface UserForm {
   email: string;
   password: string;
   role: number;
+  isActive: boolean;
 }
-
-const roleNumbers: Record<string, number> = { Admin: 0, Teacher: 1, Student: 2 };
 
 function roleStamp(role: string) {
   const cls =
@@ -29,7 +29,7 @@ export default function AdminUsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserForm>({
-    name: "", email: "", password: "", role: 2
+    name: "", email: "", password: "", role: 2, isActive: true
   });
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -38,8 +38,15 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await api.get<User[]>("/api/admin/users");
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      const response = await api.get<Array<Omit<User, "role"> & { role: number }>>(
+        "/api/admin/users"
+      );
+      setUsers(
+        (Array.isArray(response.data) ? response.data : []).map((u) => ({
+          ...u,
+          role: roleNumberToRole(u.role),
+        }))
+      );
     } catch (err) {
       console.error("Failed to fetch users:", err);
       setUsers([]);
@@ -53,7 +60,7 @@ export default function AdminUsersPage() {
 
   const openCreateModal = () => {
     setEditingUser(null);
-    setFormData({ name: "", email: "", password: "", role: 2 });
+    setFormData({ name: "", email: "", password: "", role: 2, isActive: true });
     setModalError("");
     setShowModal(true);
   };
@@ -64,7 +71,8 @@ export default function AdminUsersPage() {
       name: user.name,
       email: user.email,
       password: "",
-      role: roleNumbers[user.role] ?? 2,
+      role: roleToNumber(user.role),
+      isActive: user.isActive,
     });
     setModalError("");
     setShowModal(true);
@@ -83,6 +91,7 @@ export default function AdminUsersPage() {
           name: formData.name,
           email: formData.email,
           role: formData.role,
+          isActive: formData.isActive,
         });
       } else {
         if (!formData.password) {
@@ -162,12 +171,21 @@ export default function AdminUsersPage() {
                         )}
                       </td>
                       <td className="tnum text-[var(--ink-soft)]">{user.email}</td>
-                      <td>{roleStamp(user.role)}</td>
+                      <td>
+                        <div className="flex items-center justify-center gap-1.5">
+                          {roleStamp(user.role)}
+                          {user.isActive ? (
+                            <span className="stamp stamp-green">Active</span>
+                          ) : (
+                            <span className="stamp stamp-gray">Inactive</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="tnum text-[var(--ink-soft)]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td>
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => openEditModal(user)}
                             className="icon-btn"
@@ -260,6 +278,25 @@ export default function AdminUsersPage() {
                   </select>
                   {editingUser && isSelf(editingUser) && (
                     <p className="field-error">You cannot change your own role.</p>
+                  )}
+                </div>
+
+                <div className="field">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="user-active"
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      className="accent-[var(--blue)]"
+                      disabled={editingUser ? isSelf(editingUser) : false}
+                    />
+                    <label htmlFor="user-active" className="!normal-case !tracking-normal cursor-pointer select-none">
+                      Active account
+                    </label>
+                  </div>
+                  {editingUser && isSelf(editingUser) && (
+                    <p className="field-error">You cannot deactivate your own account.</p>
                   )}
                 </div>
               </div>

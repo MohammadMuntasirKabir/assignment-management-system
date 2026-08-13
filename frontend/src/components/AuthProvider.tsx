@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: authResponse.name,
       email: authResponse.email,
       role: roleNumberToRole(authResponse.role),
+      isActive: true,
       createdAt: new Date().toISOString(),
     });
     return authResponse;
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: authResponse.name,
       email: authResponse.email,
       role: roleNumberToRole(authResponse.role),
+      isActive: true,
       createdAt: new Date().toISOString(),
     });
     return authResponse;

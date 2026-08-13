@@ -33,6 +33,7 @@ public class AdminController : ControllerBase
                 Name = u.Name,
                 Email = u.Email,
                 Role = u.Role,
+                IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt
             })
             .ToListAsync();
@@ -52,6 +53,7 @@ public class AdminController : ControllerBase
             Name = user.Name,
             Email = user.Email,
             Role = user.Role,
+            IsActive = user.IsActive,
             CreatedAt = user.CreatedAt
         });
     }
@@ -62,6 +64,8 @@ public class AdminController : ControllerBase
         var currentUserId = _authService.GetUserIdFromToken(User);
         if (id == currentUserId && dto.Role != UserRole.Admin)
             return BadRequest(new { message = "You cannot change your own admin role" });
+        if (id == currentUserId && !dto.IsActive)
+            return BadRequest(new { message = "You cannot deactivate your own account" });
 
         var user = await _context.Users.FindAsync(id);
         if (user == null)
@@ -74,6 +78,7 @@ public class AdminController : ControllerBase
         user.Name = dto.Name;
         user.Email = dto.Email;
         user.Role = dto.Role;
+        user.IsActive = dto.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return NoContent();
