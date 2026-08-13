@@ -585,6 +585,56 @@ public class ApiWorkflowTests : IDisposable
     }
 
     [Fact]
+    public async Task Admin_UpdateClassSubject_Works()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var class2 = await _context.Classes.SingleAsync(c => c.Id != data.ClassSubject1.ClassId);
+
+        var result = await controller.UpdateClassSubject(data.ClassSubject1.Id, new CreateClassSubjectDto
+        {
+            ClassId = class2.Id,
+            SubjectId = data.ClassSubject1.SubjectId
+        });
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var dto = (ok.Value as ClassSubjectDto)!;
+        dto.ClassId.Should().Be(class2.Id);
+        dto.ClassName.Should().Be(class2.Name);
+    }
+
+    [Fact]
+    public async Task Admin_UpdateClassSubject_Duplicate_ReturnsConflict()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.UpdateClassSubject(data.ClassSubject1.Id, new CreateClassSubjectDto
+        {
+            ClassId = data.ClassSubject2.ClassId,
+            SubjectId = data.ClassSubject2.SubjectId
+        });
+
+        result.Result.Should().BeOfType<ConflictObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_UpdateClassSubject_NotFound_Returns404()
+    {
+        await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var data = _data;
+
+        var result = await controller.UpdateClassSubject(Guid.NewGuid(), new CreateClassSubjectDto
+        {
+            ClassId = data.ClassSubject1.ClassId,
+            SubjectId = data.ClassSubject1.SubjectId
+        });
+
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
     public async Task Admin_DeleteUser_Works()
     {
         await SetupAsync();

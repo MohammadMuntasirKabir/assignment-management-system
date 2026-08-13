@@ -5,13 +5,14 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
 import { ClassSubjectDto, Class, Subject } from "@/lib/types";
-import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function AdminClassSubjectsPage() {
   const [classSubjects, setClassSubjects] = useState<ClassSubjectDto[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingLink, setEditingLink] = useState<ClassSubjectDto | null>(null);
   const [formData, setFormData] = useState({ classId: "", subjectId: "" });
   const [loading, setLoading] = useState(true);
 
@@ -36,15 +37,34 @@ export default function AdminClassSubjectsPage() {
     fetchAll();
   }, []);
 
+  const openCreateModal = () => {
+    setEditingLink(null);
+    setFormData({ classId: "", subjectId: "" });
+    setShowModal(true);
+  };
+
+  const openEditModal = (link: ClassSubjectDto) => {
+    setEditingLink(link);
+    setFormData({ classId: link.classId, subjectId: link.subjectId });
+    setShowModal(true);
+  };
+
   const handleSubmit = async () => {
     if (!formData.classId || !formData.subjectId) return;
     try {
-      await api.post("/api/admin/class-subjects", { classId: formData.classId, subjectId: formData.subjectId });
+      if (editingLink) {
+        await api.put(`/api/admin/class-subjects/${editingLink.id}`, {
+          classId: formData.classId,
+          subjectId: formData.subjectId,
+        });
+      } else {
+        await api.post("/api/admin/class-subjects", { classId: formData.classId, subjectId: formData.subjectId });
+      }
       setShowModal(false);
       setFormData({ classId: "", subjectId: "" });
       fetchAll();
     } catch (err) {
-      alert(getErrorMessage(err, "Failed to link class and subject"));
+      alert(getErrorMessage(err, "Failed to save class-subject link"));
     }
   };
 
@@ -64,7 +84,7 @@ export default function AdminClassSubjectsPage() {
         <div>
           <div className="title-block">
             <h1>Class–Subject Links</h1>
-            <button onClick={() => setShowModal(true)} className="btn btn-primary">
+            <button onClick={openCreateModal} className="btn btn-primary">
               <PlusIcon className="w-4 h-4" />
               Link Class & Subject
             </button>
@@ -94,6 +114,13 @@ export default function AdminClassSubjectsPage() {
                       <td>{cs.subjectName}</td>
                       <td className="whitespace-nowrap">
                         <button
+                          className="icon-btn"
+                          onClick={() => openEditModal(cs)}
+                          aria-label={`Edit ${cs.className} – ${cs.subjectName}`}
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                        </button>
+                        <button
                           className="icon-btn icon-btn-danger"
                           onClick={() => handleDelete(cs.id)}
                           aria-label={`Unlink ${cs.className} – ${cs.subjectName}`}
@@ -115,7 +142,7 @@ export default function AdminClassSubjectsPage() {
             >
               <div className="modal-sheet">
                 <div className="modal-head">
-                  <h2>Link Class & Subject</h2>
+                  <h2>{editingLink ? "Edit Class–Subject Link" : "Link Class & Subject"}</h2>
                   <button
                     className="icon-btn"
                     onClick={() => setShowModal(false)}
@@ -127,8 +154,9 @@ export default function AdminClassSubjectsPage() {
                 <div className="modal-body">
                   <div className="space-y-4">
                     <div className="field">
-                      <label>Class</label>
+                      <label htmlFor="cs-class">Class</label>
                       <select
+                        id="cs-class"
                         className="select"
                         value={formData.classId}
                         onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
@@ -140,8 +168,9 @@ export default function AdminClassSubjectsPage() {
                       </select>
                     </div>
                     <div className="field">
-                      <label>Subject</label>
+                      <label htmlFor="cs-subject">Subject</label>
                       <select
+                        id="cs-subject"
                         className="select"
                         value={formData.subjectId}
                         onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
@@ -159,7 +188,7 @@ export default function AdminClassSubjectsPage() {
                     Cancel
                   </button>
                   <button className="btn btn-primary" onClick={handleSubmit}>
-                    Link
+                    {editingLink ? "Save" : "Link"}
                   </button>
                 </div>
               </div>

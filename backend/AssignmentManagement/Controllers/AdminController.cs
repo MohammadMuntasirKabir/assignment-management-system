@@ -348,6 +348,41 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("class-subjects/{id:guid}")]
+    public async Task<ActionResult<ClassSubjectDto>> UpdateClassSubject(Guid id, [FromBody] CreateClassSubjectDto dto)
+    {
+        var entity = await _context.ClassSubjects
+            .Include(cs => cs.Class)
+            .Include(cs => cs.Subject)
+            .FirstOrDefaultAsync(cs => cs.Id == id);
+        if (entity == null)
+            return NotFound(new { message = "Class-subject link not found" });
+
+        var classExists = await _context.Classes.AnyAsync(c => c.Id == dto.ClassId);
+        if (!classExists)
+            return NotFound(new { message = "Class not found" });
+
+        var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == dto.SubjectId);
+        if (!subjectExists)
+            return NotFound(new { message = "Subject not found" });
+
+        var existing = await _context.ClassSubjects
+            .FirstOrDefaultAsync(cs => cs.Id != id && cs.ClassId == dto.ClassId && cs.SubjectId == dto.SubjectId);
+        if (existing != null)
+            return Conflict(new { message = "This class-subject combination already exists" });
+
+        entity.ClassId = dto.ClassId;
+        entity.SubjectId = dto.SubjectId;
+        await _context.SaveChangesAsync();
+
+        var result = await _context.ClassSubjects
+            .Include(cs => cs.Class)
+            .Include(cs => cs.Subject)
+            .FirstAsync(cs => cs.Id == id);
+
+        return Ok(DtoMapper.ToClassSubject(result));
+    }
+
     // Assign teacher to class-subject
     [HttpPost("assign-teacher")]
     public async Task<IActionResult> AssignTeacher([FromBody] AssignTeacherDto dto)
