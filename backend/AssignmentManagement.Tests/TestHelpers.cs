@@ -4,6 +4,7 @@ using AssignmentManagement.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AssignmentManagement.Models.Entities;
+using Microsoft.Data.Sqlite;
 
 namespace AssignmentManagement.Tests;
 
@@ -361,4 +362,30 @@ public class FakeAuthService : IAuthService
     public Guid GetUserIdFromToken(ClaimsPrincipal user) => _userId;
 
     public UserRole GetUserRoleFromToken(ClaimsPrincipal user) => UserRole.Student;
+}
+
+public sealed class SqliteTestDb : IDisposable
+{
+    public SqliteConnection Connection { get; } = new("DataSource=:memory:");
+    public AppDbContext Context { get; }
+
+    public SqliteTestDb()
+    {
+        Connection.Open();
+        using var cmd = Connection.CreateCommand();
+        cmd.CommandText = "PRAGMA foreign_keys = ON;";
+        cmd.ExecuteNonQuery();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(Connection)
+            .Options;
+        Context = new AppDbContext(options);
+        Context.Database.EnsureCreated();
+    }
+
+    public void Dispose()
+    {
+        Context.Dispose();
+        Connection.Dispose();
+    }
 }

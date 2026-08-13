@@ -587,13 +587,105 @@ public class ApiWorkflowTests : IDisposable
     [Fact]
     public async Task Admin_DeleteUser_Works()
     {
-        var data = await SetupAsync();
+        await SetupAsync();
         var controller = TestHelpers.CreateAdminController(_context);
 
-        var result = await controller.DeleteUser(data.Teacher2.Id);
+        var newUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = "Unreferenced User",
+            Email = "unreferenced@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
+            Role = UserRole.Student,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Users.Add(newUser);
+        await _context.SaveChangesAsync();
+
+        var result = await controller.DeleteUser(newUser.Id);
 
         result.Should().BeOfType<NoContentResult>();
-        (await _context.Users.FindAsync(data.Teacher2.Id)).Should().BeNull();
+        (await _context.Users.FindAsync(newUser.Id)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Admin_CannotDeleteReferencedUser_ReturnsBadRequest()
+    {
+        using var db = new SqliteTestDb();
+        var now = DateTime.UtcNow;
+        var admin = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = "Admin",
+            Email = "admin@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+            Role = UserRole.Admin,
+            CreatedAt = now
+        };
+        var teacher = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = "Referenced Teacher",
+            Email = "refteacher@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("teacher123"),
+            Role = UserRole.Teacher,
+            CreatedAt = now
+        };
+        var classEntity = new Class { Id = Guid.NewGuid(), Name = "Class", Description = "", CreatedAt = now };
+        var subject = new Subject { Id = Guid.NewGuid(), Name = "Subject", Description = "", CreatedAt = now };
+        var classSubject = new ClassSubject
+        {
+            Id = Guid.NewGuid(),
+            ClassId = classEntity.Id,
+            SubjectId = subject.Id,
+            CreatedAt = now
+        };
+        db.Context.Users.AddRange(admin, teacher);
+        db.Context.Classes.Add(classEntity);
+        db.Context.Subjects.Add(subject);
+        db.Context.ClassSubjects.Add(classSubject);
+        db.Context.TeacherClassSubjects.Add(new TeacherClassSubject
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            ClassSubjectId = classSubject.Id,
+            CreatedAt = now
+        });
+        await db.Context.SaveChangesAsync();
+        db.Context.ChangeTracker.Clear();
+
+        var controller = TestHelpers.CreateAdminController(db.Context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.DeleteUser(teacher.Id);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        StatusCodeOf(result).Should().Be(400);
+        (await db.Context.Users.FindAsync(teacher.Id)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Admin_CannotDeleteUserWithTrackedReferences_ReturnsBadRequest()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+            new ClaimsIdentity(new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, data.Admin.Id.ToString())
+            }, "test"));
+
+        var result = await controller.DeleteUser(data.Teacher1.Id);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        StatusCodeOf(result).Should().Be(400);
+        (await _context.Users.FindAsync(data.Teacher1.Id)).Should().NotBeNull();
     }
 
     [Fact]

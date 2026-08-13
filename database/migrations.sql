@@ -51,7 +51,7 @@ CREATE TABLE "ClassStudents" (
     "CreatedAt" timestamp with time zone NOT NULL,
     CONSTRAINT "PK_ClassStudents" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_ClassStudents_Classes_ClassId" FOREIGN KEY ("ClassId") REFERENCES "Classes" ("Id") ON DELETE CASCADE,
-    CONSTRAINT "FK_ClassStudents_Users_StudentId" FOREIGN KEY ("StudentId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+    CONSTRAINT "FK_ClassStudents_Users_StudentId" FOREIGN KEY ("StudentId") REFERENCES "Users" ("Id") ON DELETE RESTRICT
 );
 
 CREATE TABLE "Assignments" (
@@ -67,7 +67,7 @@ CREATE TABLE "Assignments" (
     "UpdatedAt" timestamp with time zone NOT NULL,
     CONSTRAINT "PK_Assignments" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_Assignments_ClassSubjects_ClassSubjectId" FOREIGN KEY ("ClassSubjectId") REFERENCES "ClassSubjects" ("Id") ON DELETE CASCADE,
-    CONSTRAINT "FK_Assignments_Users_TeacherId" FOREIGN KEY ("TeacherId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+    CONSTRAINT "FK_Assignments_Users_TeacherId" FOREIGN KEY ("TeacherId") REFERENCES "Users" ("Id") ON DELETE RESTRICT
 );
 
 CREATE TABLE "TeacherClassSubjects" (
@@ -77,7 +77,7 @@ CREATE TABLE "TeacherClassSubjects" (
     "CreatedAt" timestamp with time zone NOT NULL,
     CONSTRAINT "PK_TeacherClassSubjects" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_TeacherClassSubjects_ClassSubjects_ClassSubjectId" FOREIGN KEY ("ClassSubjectId") REFERENCES "ClassSubjects" ("Id") ON DELETE CASCADE,
-    CONSTRAINT "FK_TeacherClassSubjects_Users_TeacherId" FOREIGN KEY ("TeacherId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+    CONSTRAINT "FK_TeacherClassSubjects_Users_TeacherId" FOREIGN KEY ("TeacherId") REFERENCES "Users" ("Id") ON DELETE RESTRICT
 );
 
 CREATE TABLE "Submissions" (
@@ -93,7 +93,7 @@ CREATE TABLE "Submissions" (
     "UpdatedAt" timestamp with time zone NOT NULL,
     CONSTRAINT "PK_Submissions" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_Submissions_Assignments_AssignmentId" FOREIGN KEY ("AssignmentId") REFERENCES "Assignments" ("Id") ON DELETE CASCADE,
-    CONSTRAINT "FK_Submissions_Users_StudentId" FOREIGN KEY ("StudentId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+    CONSTRAINT "FK_Submissions_Users_StudentId" FOREIGN KEY ("StudentId") REFERENCES "Users" ("Id") ON DELETE RESTRICT
 );
 
 CREATE INDEX "IX_Assignments_ClassSubjectId" ON "Assignments" ("ClassSubjectId");

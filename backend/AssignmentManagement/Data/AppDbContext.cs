@@ -49,7 +49,7 @@ public class AppDbContext : DbContext
             entity.HasOne(cs => cs.Student)
                 .WithMany(u => u.ClassStudents)
                 .HasForeignKey(cs => cs.StudentId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(cs => new { cs.ClassId, cs.StudentId }).IsUnique();
         });
@@ -59,7 +59,7 @@ public class AppDbContext : DbContext
             entity.HasOne(tcs => tcs.Teacher)
                 .WithMany(u => u.TeacherClassSubjects)
                 .HasForeignKey(tcs => tcs.TeacherId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(tcs => tcs.ClassSubject)
                 .WithMany(cs => cs.TeacherClassSubjects)
@@ -79,7 +79,7 @@ public class AppDbContext : DbContext
             entity.HasOne(a => a.Teacher)
                 .WithMany(u => u.Assignments)
                 .HasForeignKey(a => a.TeacherId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.Property(a => a.Status).HasConversion<string>();
         });
@@ -94,7 +94,7 @@ public class AppDbContext : DbContext
             entity.HasOne(s => s.Student)
                 .WithMany(u => u.Submissions)
                 .HasForeignKey(s => s.StudentId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.Property(s => s.Status).HasConversion<string>();
 

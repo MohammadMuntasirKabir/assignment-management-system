@@ -15,6 +15,9 @@ public class AdminController : ControllerBase
     private readonly AppDbContext _context;
     private readonly IAuthService _authService;
 
+    private const string UserReferencedDeleteMessage =
+        "Cannot delete this account while it is still assigned to classes, assignments, or submissions. Remove those links first.";
+
     public AdminController(AppDbContext context, IAuthService authService)
     {
         _context = context;
@@ -95,8 +98,19 @@ public class AdminController : ControllerBase
         if (user == null)
             return NotFound(new { message = "User not found" });
 
-        _context.Users.Remove(user);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest(new { message = UserReferencedDeleteMessage });
+        }
+        catch (InvalidOperationException)
+        {
+            return BadRequest(new { message = UserReferencedDeleteMessage });
+        }
         return NoContent();
     }
 
@@ -125,22 +139,26 @@ public class AdminController : ControllerBase
         target.UpdatedAt = DateTime.UtcNow;
 
         AuthResponseDto? demotedSession = null;
-        if (dto.DeleteSelf)
-        {
-            _context.Users.Remove(current);
-        }
-        else
-        {
-            current.Role = dto.SelfRole!.Value;
-            current.UpdatedAt = DateTime.UtcNow;
-            demotedSession = _authService.BuildAuthResponse(current);
-        }
-
         try
         {
+            if (dto.DeleteSelf)
+            {
+                _context.Users.Remove(current);
+            }
+            else
+            {
+                current.Role = dto.SelfRole!.Value;
+                current.UpdatedAt = DateTime.UtcNow;
+                demotedSession = _authService.BuildAuthResponse(current);
+            }
+
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateException)
+        {
+            return BadRequest(new { message = "Cannot delete your account while it still owns classes or assignments. Choose a new role instead, or transfer that work first." });
+        }
+        catch (InvalidOperationException)
         {
             return BadRequest(new { message = "Cannot delete your account while it still owns classes or assignments. Choose a new role instead, or transfer that work first." });
         }
