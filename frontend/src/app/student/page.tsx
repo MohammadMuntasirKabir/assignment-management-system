@@ -40,12 +40,12 @@ export default function StudentDashboard() {
 
   const assignmentRibbon = (a: Assignment) => {
     if (submittedIds.has(a.id)) {
-      return <span className="stamp stamp-green whitespace-nowrap">Submitted</span>;
+      return "Submitted";
     }
     if (isOverdue(a)) {
-      return <span className="stamp stamp-red whitespace-nowrap">Overdue</span>;
+      return "Overdue";
     }
-    return <span className="stamp stamp-blue whitespace-nowrap">Due</span>;
+    return "Due";
   };
 
   const stampClass = (status: string) => {
@@ -112,9 +112,7 @@ export default function StudentDashboard() {
                           <td className="font-medium">{a.title}</td>
                           <td>{a.subjectName}</td>
                           <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
-                          <td>
-                            {assignmentRibbon(a)}
-                          </td>
+                          <td className="text-sm text-ink-soft">{assignmentRibbon(a)}</td>
                         </tr>
                       ))}
                     </tbody>
