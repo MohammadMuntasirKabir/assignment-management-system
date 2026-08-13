@@ -48,6 +48,18 @@ export default function StudentDashboard() {
     return "Due";
   };
 
+  const assignmentStamp = (a: Assignment) => {
+    if (submittedIds.has(a.id)) return "stamp stamp-green";
+    if (isOverdue(a)) return "stamp stamp-red";
+    return "stamp stamp-blue";
+  };
+
+  const submissionStamp = (status: string) => {
+    if (status === "Reviewed") return "stamp stamp-green";
+    if (status === "Late") return "stamp stamp-red";
+    return "stamp stamp-blue";
+  };
+
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
@@ -99,7 +111,9 @@ export default function StudentDashboard() {
                           <td className="font-medium">{a.title}</td>
                           <td>{a.subjectName}</td>
                           <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
-                          <td className="text-sm text-[var(--ink-soft)]">{assignmentStatus(a)}</td>
+                          <td>
+                            <span className={assignmentStamp(a)}>{assignmentStatus(a)}</span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -125,7 +139,9 @@ export default function StudentDashboard() {
                       {submissions.map((s) => (
                         <tr key={s.id}>
                           <td>{s.assignmentTitle}</td>
-                          <td className="text-sm text-[var(--ink-soft)]">{s.status}</td>
+                          <td>
+                            <span className={submissionStamp(s.status)}>{s.status}</span>
+                          </td>
                           <td className="tnum">{s.marks ?? "—"}</td>
                           <td>{s.feedback ?? "—"}</td>
                         </tr>

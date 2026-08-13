@@ -70,6 +70,12 @@ export default function StudentAssignmentsPage() {
     return "Due";
   };
 
+  const statusStamp = (a: Assignment) => {
+    if (submittedIds.has(a.id)) return "stamp stamp-green";
+    if (isOverdue(a)) return "stamp stamp-red";
+    return "stamp stamp-blue";
+  };
+
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
@@ -105,7 +111,7 @@ export default function StudentAssignmentsPage() {
                 <div key={a.id} className="sheet p-5 flex flex-col gap-4">
                   <div className="flex justify-between items-start gap-3">
                     <h2 className="font-semibold text-lg leading-snug">{a.title}</h2>
-                    <span className="text-sm text-[var(--ink-soft)] whitespace-nowrap">{statusFor(a)}</span>
+                    <span className={`${statusStamp(a)} shrink-0 whitespace-nowrap`}>{statusFor(a)}</span>
                   </div>
                   <p className="text-sm text-gray-700 line-clamp-3">{a.description}</p>
                   <div className="text-sm space-y-1">
