@@ -27,6 +27,10 @@ export default function AdminUsersPage() {
   const [transferSelfRole, setTransferSelfRole] = useState<number | null>(null);
   const [transferDeleteSelf, setTransferDeleteSelf] = useState(false);
   const [modalError, setModalError] = useState("");
+  const [successInfo, setSuccessInfo] = useState<{
+    message: string;
+    currentSession: AuthResponse | null;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +63,7 @@ export default function AdminUsersPage() {
     setTransferSelfRole(null);
     setTransferDeleteSelf(false);
     setModalError("");
+    setSuccessInfo(null);
     setShowModal(true);
   };
 
@@ -73,6 +78,7 @@ export default function AdminUsersPage() {
     setTransferSelfRole(null);
     setTransferDeleteSelf(false);
     setModalError("");
+    setSuccessInfo(null);
     setShowModal(true);
   };
 
@@ -102,10 +108,20 @@ export default function AdminUsersPage() {
             deleteSelf: transferDeleteSelf,
           }
         );
+        setShowModal(false);
+        setSaving(false);
         if (transferDeleteSelf) {
-          logout();
+          setSuccessInfo({
+            message: `Admin role transferred to ${editingUser!.name}. Your account was deleted, so you are now signed out.`,
+            currentSession: null,
+          });
         } else if (res.data.currentSession) {
-          setSession(res.data.currentSession);
+          setSuccessInfo({
+            message: `Admin role transferred to ${editingUser!.name}. You are now a ${roleNumberToRole(
+              res.data.currentSession.role
+            )} — Continue to switch to your new dashboard.`,
+            currentSession: res.data.currentSession,
+          });
         }
       } catch (err) {
         setModalError(getErrorMessage(err, "Failed to transfer the admin role"));
@@ -150,6 +166,10 @@ export default function AdminUsersPage() {
   };
 
   const isSelf = (user: User) => currentUser?.id === user.id;
+
+  const isTransferringAdmin =
+    editingUser !== null && !isSelf(editingUser) && formData.role === 0;
+  const transferIncomplete = isTransferringAdmin && !transferDeleteSelf && !transferSelfRole;
 
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
@@ -310,8 +330,8 @@ export default function AdminUsersPage() {
                 {editingUser && !isSelf(editingUser) && formData.role === 0 && (
                   <div className="space-y-3">
                     <div className="notice">
-                      There can only be one admin. Selecting an Admin transfers the
-                      role — choose a new role for your account or delete it.
+                      There can only be one admin. {editingUser.name} will become the
+                      admin — choose your own new role below, or delete your account.
                     </div>
                     <div className="field">
                       <label htmlFor="transfer-role">Your new role</label>
@@ -348,6 +368,11 @@ export default function AdminUsersPage() {
                         </label>
                       </div>
                     </div>
+                    {transferIncomplete && (
+                      <p className="field-error">
+                        Pick your new role or delete your account to save this transfer.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -355,8 +380,33 @@ export default function AdminUsersPage() {
                 <button onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={saving}>
                   Cancel
                 </button>
-                <button onClick={handleSubmit} className="btn btn-primary" disabled={saving}>
+                <button onClick={handleSubmit} className="btn btn-primary" disabled={saving || transferIncomplete}>
                   {saving ? "Saving…" : editingUser ? "Save changes" : "Create account"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {successInfo && (
+          <div className="modal-overlay" role="alert">
+            <div className="modal-sheet">
+              <div className="modal-body">
+                <div className="notice">{successInfo.message}</div>
+              </div>
+              <div className="modal-foot">
+                <button
+                  onClick={() => {
+                    if (successInfo.currentSession === null) {
+                      logout();
+                    } else if (successInfo.currentSession) {
+                      setSession(successInfo.currentSession);
+                    }
+                    setSuccessInfo(null);
+                  }}
+                  className="btn btn-primary"
+                >
+                  Continue
                 </button>
               </div>
             </div>

@@ -172,7 +172,12 @@ describe("AdminUsersPage", () => {
         deleteSelf: false,
       });
     });
-    expect(mockSetSession).toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Admin role transferred to Bob/);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => {
+      expect(mockSetSession).toHaveBeenCalled();
+    });
     expect(mockPut).not.toHaveBeenCalled();
   });
 
@@ -204,11 +209,16 @@ describe("AdminUsersPage", () => {
         deleteSelf: true,
       });
     });
-    expect(mockLogout).toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/signed out/);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => {
+      expect(mockLogout).toHaveBeenCalled();
+    });
     expect(mockPut).not.toHaveBeenCalled();
   });
 
-  it("requires a self role or deletion when transferring admin", async () => {
+  it("disables save until a self role or deletion is chosen when transferring admin", async () => {
     mockGet.mockResolvedValueOnce({ data: users });
 
     render(<AdminUsersPage />);
@@ -225,9 +235,11 @@ describe("AdminUsersPage", () => {
     await waitFor(() => {
       expect(screen.getByLabelText("Your new role")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+    expect(screen.getByText(/Pick your new role or delete your account/)).toBeInTheDocument();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/Choose a new role/);
+    fireEvent.change(screen.getByLabelText("Your new role"), { target: { value: "1" } });
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
     expect(mockPost).not.toHaveBeenCalled();
   });
 });
