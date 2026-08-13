@@ -362,6 +362,61 @@ body {
 }
 
 /* ------------------------------------------------------------------
+   Stamps — statuses are rubber stamps, not tinted pills.
+   ------------------------------------------------------------------ */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: var(--r-sm);
+  line-height: 1.25;
+}
+
+.stamp::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.stamp-blue {
+  color: var(--blue);
+  background: var(--blue-wash);
+}
+
+.stamp-green {
+  color: var(--green);
+  background: var(--green-wash);
+}
+
+.stamp-red {
+  color: var(--red);
+  background: var(--red-wash);
+}
+
+.stamp-amber {
+  color: var(--amber);
+  background: var(--amber-wash);
+}
+
+.stamp-purple {
+  color: var(--purple);
+  background: var(--purple-wash);
+}
+
+.stamp-gray {
+  color: var(--gray);
+  background: var(--gray-wash);
+}
+
+/* ------------------------------------------------------------------
    Ruled tables — hairline columns and rows, tabular numerals.
    ------------------------------------------------------------------ */
 .table-sheet {

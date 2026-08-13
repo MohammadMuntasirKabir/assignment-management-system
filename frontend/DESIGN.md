@@ -148,15 +148,15 @@ components:
 
 **Creative North Star: "The Drawing Sheet"**
 
-This is not a SaaS dashboard — it is an engineering drawing of the assignment cycle. Every screen is read the way a machinist reads a sheet: warm drafting paper as the ground, hairline ink rules separating information, a title block naming each surface, plain-text statuses where any other system would reach for a tinted pill, and engineering-blue as the only active ink. Vermillion appears solely for revision — a late submission, an overdue deadline, a destructive action — because in drafting, red is the color of "change this, this is wrong."
+This is not a SaaS dashboard — it is an engineering drawing of the assignment cycle. Every screen is read the way a machinist reads a sheet: warm drafting paper as the ground, hairline ink rules separating information, a title block naming each surface, statuses stamped like rubber inspection marks where any other system would reach for a tinted pill, and engineering-blue as the only active ink. Vermillion appears solely for revision — a late submission, an overdue deadline, a destructive action — because in drafting, red is the color of "change this, this is wrong."
 
-The system refuses the generic "white card + rounded shadow" default outright. Cards are *sheets*: crisp-cornered rectangles with hairline frames and corner registration marks, floating on a faint drafting grid. Tabular numerals everywhere a number appears. Small-caps tracked labels (`.anno`) read like drawing annotations. Nothing is ambiguous; a deadline is a dimension, a status is plain text, a list is a ruled table.
+The system refuses the generic "white card + rounded shadow" default outright. Cards are *sheets*: crisp-cornered rectangles with hairline frames and corner registration marks, floating on a faint drafting grid. Tabular numerals everywhere a number appears. Small-caps tracked labels (`.anno`) read like drawing annotations. Nothing is ambiguous; a deadline is a dimension, a status is a stamp, a list is a ruled table.
 
 **Key Characteristics:**
 - Warm paper ground with a faint drafting grid; content lives on sheets, never directly on the grid
 - Hairline rules and crisp corners (3px max); depth by tonal wash, not heavy shadow
 - Blue = active work; vermillion = revision/late/destructive; green = reviewed/complete; gray = dormant (draft)
-- Statuses are plain text in cells and cards — never tinted pills and never bordered badges
+- Statuses and roles are stamps in cells and cards — 0.66rem uppercase tracked text with a hairline border, a dot, and a tonal wash; never tinted pills
 - Tabular numerals for all figures; small-caps tracked labels for all field/annotation text
  - The sidebar is a "drawing index" — a left rail of sheet entries, the active sheet marked as a rounded blue-wash pill
 
@@ -205,7 +205,7 @@ The palette reads like ink on drafting paper: warm neutrals for the surface, one
 - **Action Tile** (600 weight, 0.8rem): quick-action tiles on dashboards.
 - **Field Error** (400 weight, 0.76rem): inline validation messages.
 - **Stat Label** (700 weight, 0.62rem, 0.13em tracking, uppercase): labels on measurement blocks.
-- **Status** (400 weight, 0.82rem): plain-text statuses in cells and cards.
+- **Status / Role Stamp** (700 weight, 0.66rem, 0.11em tracking, uppercase): `.stamp` statuses and role markers in cells and cards.
 - **Table Header** (700 weight, 0.64rem, 0.12em tracking, uppercase): ruled-table column heads.
 - **Annotation Label** (600 weight, 0.68rem, 0.12–0.16em tracking, uppercase): `.anno` labels, field labels, title-block revision notes. This small-caps voice is the system's signature.
 
@@ -225,7 +225,7 @@ Flat by default — depth is carried by tonal layering and hairline borders, not
 
 ## Shapes
 
-Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3px` on sheets, cards, modals (`--r`/`--r-sm`) — while **everything clickable rounds off** at `7px` (`--r-btn`) with buttons, action tiles, and the nav entries sitting at full `999px` pills for icon buttons. This is the Interactive Roundness Rule: the more a thing invites a tap, the rounder and more colored it becomes. Drafting still forbids 8px+ roundness on surfaces and any skeuomorphic bevel. Borders are 1px hairlines (`rgba(27,36,48,0.18)` at rest, `0.34` for strong rules like title-block closures and table headers). The signature geometry is the corner registration mark: `.sheet` and `.auth-sheet` carry a small L-shaped tick at their top-left and bottom-right corners, like a machined drawing sheet. Statuses are plain text — no badge, no border, no tinted pill.
+Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3px` on sheets, cards, modals (`--r`/`--r-sm`) — while **everything clickable rounds off** at `7px` (`--r-btn`) with buttons, action tiles, and the nav entries sitting at full `999px` pills for icon buttons. This is the Interactive Roundness Rule: the more a thing invites a tap, the rounder and more colored it becomes. Drafting still forbids 8px+ roundness on surfaces and any skeuomorphic bevel. Borders are 1px hairlines (`rgba(27,36,48,0.18)` at rest, `0.34` for strong rules like title-block closures and table headers). The signature geometry is the corner registration mark: `.sheet` and `.auth-sheet` carry a small L-shaped tick at their top-left and bottom-right corners, like a machined drawing sheet. Statuses are rubber stamps — small uppercase ink marks with a hairline border, a dot, and a tonal wash; never tinted pills.
 
 ## Components
 
@@ -241,8 +241,8 @@ Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3p
 - **Disabled:** 50% opacity, `not-allowed` cursor.
 
 ### Statuses
-- **Style:** plain text, 0.82rem/400, Ink-Soft color, no border or background.
-- **Meaning:** text in cells and cards carries the state (Submitted / Due / Overdue / Reviewed / Late / Draft / Published); color meaning follows the One-Ink Rule when a tint is applied, but no badge chrome is used.
+- **Style:** `.stamp` — 0.66rem/700 uppercase with 0.11em tracking, 1px current-color border, `--r-sm` radius, a 5px dot before the word, and a tonal wash background.
+- **Meaning:** stamps in cells and cards carry the state (Submitted / Due / Overdue / Reviewed / Late / Draft / Published) and roles (Admin / Teacher / Student); color meaning follows the One-Ink Rule — blue active, green reviewed, red late/destructive, amber caution, purple class/link metadata, gray dormant (Draft).
 
 ### Cards / Containers (`.sheet`)
 - **Corner Style:** crisp (3px radius), with corner registration marks.
@@ -273,7 +273,7 @@ Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3p
 
 ### Do:
 - **Do** open every surface with a title block: name left, action/revision note right, strong hairline below.
-- **Do** express statuses as plain text and figures as tabular numerals.
+- **Do** express statuses and roles as stamps and figures as tabular numerals.
 - **Do** keep corners at 3px (2px for icon buttons).
 - **Do** use vermillion only for late/overdue/destructive — nothing else.
 - **Do** introduce every metadata value with a small-caps annotation label.
@@ -281,7 +281,7 @@ Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3p
 
 ### Don't:
 - **Don't** use white cards with `rounded-lg`-style 8px+ radius, heavy shadows, or gradient fills — the sheet replaces the card.
-- **Don't** render statuses as colored pill backgrounds or bordered badges; use plain text.
+- **Don't** render statuses as colored pill backgrounds or bordered badges; use `.stamp` marks.
 - **Don't** mix green into constructive buttons or blue into completion states; the One-Ink Rule holds.
 - **Don't** let any screen exceed one filled accent color at a time.
 - **Don't** add motion to rest states; transitions are brief (0.12–0.15s) color/border fades only.

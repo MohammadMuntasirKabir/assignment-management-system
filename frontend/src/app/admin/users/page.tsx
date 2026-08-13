@@ -215,11 +215,13 @@ export default function AdminUsersPage() {
                       <td className="font-semibold text-[var(--ink)]">
                         {user.name}
                         {self && (
-                          <span className="ml-2 text-xs text-[var(--ink-soft)]">you</span>
+                          <span className="stamp stamp-gray ml-2">you</span>
                         )}
                       </td>
                       <td className="tnum text-[var(--ink-soft)]">{user.email}</td>
-                      <td className="font-semibold text-[var(--blue-ink)]">{user.role}</td>
+                      <td>
+                        <span className="stamp stamp-blue">{user.role}</span>
+                      </td>
                       <td className="tnum text-[var(--ink-soft)]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
