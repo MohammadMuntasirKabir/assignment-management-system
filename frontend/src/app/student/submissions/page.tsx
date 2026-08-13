@@ -26,19 +26,6 @@ export default function StudentSubmissionsPage() {
     fetchSubmissions();
   }, []);
 
-  const stampClass = (status: string) => {
-    switch (status) {
-      case "Reviewed":
-        return "stamp stamp-green";
-      case "Late":
-        return "stamp stamp-red";
-      case "Submitted":
-        return "stamp stamp-blue";
-      default:
-        return "stamp stamp-gray";
-    }
-  };
-
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
@@ -71,9 +58,7 @@ export default function StudentSubmissionsPage() {
                   {submissions.map((s) => (
                     <tr key={s.id}>
                       <td className="font-medium">{s.assignmentTitle}</td>
-                      <td>
-                        <span className={stampClass(s.status)}>{s.status}</span>
-                      </td>
+                      <td className="text-sm text-ink-soft">{s.status}</td>
                       <td className="tnum">{s.marks !== null ? `${s.marks}` : "Not graded"}</td>
                       <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
