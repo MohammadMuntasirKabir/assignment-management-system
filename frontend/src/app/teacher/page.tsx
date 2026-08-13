@@ -42,6 +42,9 @@ export default function TeacherDashboard() {
   const statusText = (status: string) =>
     status === "Published" ? "Published" : "Draft";
 
+  const statusStamp = (status: string) =>
+    status === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
+
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
       <DashboardLayout allowedRoles={["Teacher"]}>
@@ -91,7 +94,9 @@ export default function TeacherDashboard() {
                       <td className="font-medium">{a.title}</td>
                       <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                       <td className="tnum">{a.maxMarks}</td>
-                      <td className="text-sm text-[var(--ink-soft)]">{statusText(a.status)}</td>
+                      <td>
+                        <span className={statusStamp(a.status)}>{statusText(a.status)}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

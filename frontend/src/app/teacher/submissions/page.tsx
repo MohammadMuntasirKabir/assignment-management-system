@@ -84,7 +84,6 @@ export default function TeacherSubmissionsPage() {
                     <th>Assignment</th>
                     <th>Student</th>
                     <th>Submitted</th>
-                    <th>Status</th>
                     <th>Marks</th>
                     <th>Actions</th>
                   </tr>
@@ -97,7 +96,6 @@ export default function TeacherSubmissionsPage() {
                       <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
                       </td>
-                      <td className="text-sm text-[var(--ink-soft)]">{s.status}</td>
                       <td className="tnum">{s.marks ?? "Not graded"}</td>
                       <td className="whitespace-nowrap">
                         <button
