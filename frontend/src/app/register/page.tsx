@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
@@ -8,36 +11,40 @@ import { roleNumberToRole } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/api";
 import { UserRole } from "@/lib/types";
 
+const registerSchema = z
+  .object({
+    name: z.string().trim().min(1, "Please enter your full name."),
+    email: z.string().trim().min(1, "Email is required").email("Enter a valid email address."),
+    password: z.string().min(6, "Password must be at least 6 characters."),
+    confirm: z.string().min(1, "Please confirm your password."),
+  })
+  .refine((data) => data.password === data.confirm, {
+    path: ["confirm"],
+    message: "Passwords do not match.",
+  });
+
+type RegisterFormData = z.infer<typeof registerSchema>;
+
 export default function RegisterPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    mode: "onBlur",
+  });
+  const { register: registerAuth } = useAuth();
   const router = useRouter();
 
-  const validate = (): string | null => {
-    if (!name.trim()) return "Please enter your full name.";
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return "Enter a valid email address.";
-    if (password.length < 6) return "Password must be at least 6 characters.";
-    if (password !== confirm) return "Passwords do not match.";
-    return null;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async ({ name, email, password }: RegisterFormData) => {
     setError("");
-    const invalid = validate();
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
     setLoading(true);
 
     try {
-      const response = await register(name.trim(), email.trim(), password);
+      const response = await registerAuth(name, email, password);
       const role = roleNumberToRole(response.role);
       const rolePath = role.toLowerCase() as Lowercase<UserRole>;
       router.replace(`/${rolePath}`);
@@ -77,18 +84,20 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             <div className="field">
               <label htmlFor="name">Full name</label>
               <input
                 id="name"
                 type="text"
                 autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                aria-invalid={!!errors.name}
                 className="input"
                 placeholder="e.g. Arifa Rahman"
+                required
+                {...register("name")}
               />
+              {errors.name && <p className="field-error" role="alert">{errors.name.message}</p>}
             </div>
 
             <div className="field">
@@ -97,11 +106,13 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={!!errors.email}
                 className="input"
                 placeholder="you@institution.edu"
+                required
+                {...register("email")}
               />
+              {errors.email && <p className="field-error" role="alert">{errors.email.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -111,11 +122,13 @@ export default function RegisterPage() {
                   id="password"
                   type="password"
                   autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  aria-invalid={!!errors.password}
                   className="input"
                   placeholder="Min. 6 characters"
+                  required
+                  {...register("password")}
                 />
+                {errors.password && <p className="field-error" role="alert">{errors.password.message}</p>}
               </div>
 
               <div className="field">
@@ -124,11 +137,13 @@ export default function RegisterPage() {
                   id="confirm"
                   type="password"
                   autoComplete="new-password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  aria-invalid={!!errors.confirm}
                   className="input"
                   placeholder="Repeat password"
+                  required
+                  {...register("confirm")}
                 />
+                {errors.confirm && <p className="field-error" role="alert">{errors.confirm.message}</p>}
               </div>
             </div>
 

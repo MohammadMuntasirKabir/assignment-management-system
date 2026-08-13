@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Assignment & Submission Management System — Frontend
+
+The Next.js (App Router) frontend for the role-based **Assignment & Submission Management System**. It provides separate interfaces for **Admin**, **Teacher**, and **Student** roles, backed by the ASP.NET Core Web API in `../backend`.
+
+## Stack
+
+- Next.js 16 (App Router), React 19, TypeScript
+- Tailwind CSS
+- react-hook-form + Zod (form validation)
+- Axios (API client with JWT interceptor)
+- Jest + React Testing Library (tests)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# App runs at http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `.env.local` (see `.env.example`):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
 
-## Learn More
+The backend must be running first — see the root `../README.md` for backend and database setup.
 
-To learn more about Next.js, take a look at the following resources:
+## Running Tests
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Layout
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── login/          # Sign in (Zod + react-hook-form validation)
+│   ├── register/       # Student registration (Zod + react-hook-form)
+│   ├── admin/          # Users, classes, subjects, class-subjects, assignments, submissions
+│   ├── teacher/        # Assignments CRUD, submissions grading
+│   ├── student/        # Assignments view/submit, submissions list
+│   └── globals.css     # Design tokens and shared styles
+├── components/         # AuthProvider, ProtectedRoute, DashboardLayout
+└── lib/                # api.ts (axios), auth.ts (cookies), types.ts
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Each page directory contains a `__tests__` folder with its component tests.

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
@@ -8,16 +11,28 @@ import { roleNumberToRole } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/api";
 import { UserRole } from "@/lib/types";
 
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur",
+  });
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async ({ email, password }: LoginFormData) => {
     setLoading(true);
     setError("");
 
@@ -59,19 +74,20 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             <div className="field">
               <label htmlFor="email">Email</label>
               <input
                 id="email"
                 type="email"
                 autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                aria-invalid={!!errors.email}
                 className="input"
                 placeholder="you@institution.edu"
+                required
+                {...register("email")}
               />
+              {errors.email && <p className="field-error" role="alert">{errors.email.message}</p>}
             </div>
 
             <div className="field">
@@ -80,12 +96,13 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                aria-invalid={!!errors.password}
                 className="input"
                 placeholder="Your password"
+                required
+                {...register("password")}
               />
+              {errors.password && <p className="field-error" role="alert">{errors.password.message}</p>}
             </div>
 
             <button type="submit" disabled={loading} className="btn btn-primary w-full">

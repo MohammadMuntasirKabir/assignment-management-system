@@ -68,4 +68,29 @@ describe("LoginPage", () => {
       expect(mockLogin).toHaveBeenCalledWith("admin@example.com", "admin123");
     });
   });
+
+  it("shows validation errors for invalid email and missing password", async () => {
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "not-an-email" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Enter a valid email address")).toBeInTheDocument();
+      expect(screen.getByText("Password is required")).toBeInTheDocument();
+    });
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it("does not call login when only whitespace is submitted", async () => {
+    render(<LoginPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Email is required")).toBeInTheDocument();
+    });
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
 });

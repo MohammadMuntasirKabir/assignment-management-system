@@ -10,7 +10,7 @@ A role-based web application for schools and colleges to manage assignments, sub
 - **Student dashboard** — View published assignments for enrolled classes. Submit assignments and update submissions before the deadline. View submission status, marks, and teacher feedback.
 - **Business rules enforced** — Draft/published assignment states, deadline enforcement (late submissions flagged), duplicate submission prevention, marks cannot exceed max marks.
 - **API documentation** — Interactive Swagger UI at `/swagger` on the backend.
-- **Unit tested** — 53 backend tests (xUnit) and 30 frontend tests (Jest + React Testing Library).
+- **Unit tested** — 70 backend tests (xUnit) and 59 frontend tests (Jest + React Testing Library).
 
 ## Technology Stack
 
@@ -72,7 +72,7 @@ OnnorokomProjukti/
 │       │   ├── api.ts           (Axios instance with JWT interceptor + getErrorMessage helper)
 │       │   ├── auth.ts          (Cookie-based token management)
 │       │   └── types.ts         (TypeScript interfaces)
-│       └── __tests__/           (Frontend tests)
+│       └── src/__tests__ + per-page __tests__ folders (Jest + RTL tests)
 ├── database/
 │   ├── migrations.sql           (EF Core migration SQL)
 │   └── seed_data.sql            (Raw SQL seed data)
@@ -180,11 +180,13 @@ npm test
 ```
 
 Tests cover:
-- Login form rendering and validation
+- Login and registration form rendering and validation (Zod + react-hook-form)
 - ProtectedRoute role-based access
 - Auth context behavior (login/logout/state restore)
 - Auth helpers (role mapping, cookie persistence)
 - DashboardLayout per-role navigation
+- Student dashboard, assignments list, and submissions pages
+- Admin users, class-subjects, and student workflow pages
 
 ## Demo Credentials
 
