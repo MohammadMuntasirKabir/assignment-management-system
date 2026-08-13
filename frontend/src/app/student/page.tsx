@@ -54,12 +54,6 @@ export default function StudentDashboard() {
     return "stamp stamp-blue";
   };
 
-  const submissionStamp = (status: string) => {
-    if (status === "Reviewed") return "stamp stamp-green";
-    if (status === "Late") return "stamp stamp-red";
-    return "stamp stamp-blue";
-  };
-
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
@@ -130,7 +124,6 @@ export default function StudentDashboard() {
                     <thead>
                       <tr>
                         <th>Assignment</th>
-                        <th>Status</th>
                         <th>Marks</th>
                         <th>Feedback</th>
                       </tr>
@@ -139,9 +132,6 @@ export default function StudentDashboard() {
                       {submissions.map((s) => (
                         <tr key={s.id}>
                           <td>{s.assignmentTitle}</td>
-                          <td>
-                            <span className={submissionStamp(s.status)}>{s.status}</span>
-                          </td>
                           <td className="tnum">{s.marks ?? "—"}</td>
                           <td>{s.feedback ?? "—"}</td>
                         </tr>
