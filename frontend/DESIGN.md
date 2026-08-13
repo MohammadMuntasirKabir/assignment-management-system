@@ -68,11 +68,10 @@ typography:
     fontSize: "0.68rem"
     fontWeight: 600
     letterSpacing: "0.12em"
-  stamp:
+  status:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "0.66rem"
-    fontWeight: 700
-    letterSpacing: "0.11em"
+    fontSize: "0.82rem"
+    fontWeight: 400
   table-header:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "0.64rem"
@@ -124,10 +123,9 @@ components:
     backgroundColor: "transparent"
     textColor: "{colors.ink-soft}"
     padding: "0.5rem 0.9rem"
-  stamp:
-    textColor: "{colors.engineering-blue}"
-    rounded: "{rounded.sm}"
-    padding: "0.18rem 0.5rem"
+  status:
+    textColor: "{colors.ink-soft}"
+    padding: "0"
   input:
     backgroundColor: "{colors.paper-sheet}"
     textColor: "{colors.ink}"
@@ -150,15 +148,15 @@ components:
 
 **Creative North Star: "The Drawing Sheet"**
 
-This is not a SaaS dashboard — it is an engineering drawing of the assignment cycle. Every screen is read the way a machinist reads a sheet: warm drafting paper as the ground, hairline ink rules separating information, a title block naming each surface, stamp-style statuses where any other system would reach for a tinted pill, and engineering-blue as the only active ink. Vermillion appears solely for revision — a late submission, an overdue deadline, a destructive action — because in drafting, red is the color of "change this, this is wrong."
+This is not a SaaS dashboard — it is an engineering drawing of the assignment cycle. Every screen is read the way a machinist reads a sheet: warm drafting paper as the ground, hairline ink rules separating information, a title block naming each surface, plain-text statuses where any other system would reach for a tinted pill, and engineering-blue as the only active ink. Vermillion appears solely for revision — a late submission, an overdue deadline, a destructive action — because in drafting, red is the color of "change this, this is wrong."
 
-The system refuses the generic "white card + rounded shadow" default outright. Cards are *sheets*: crisp-cornered rectangles with hairline frames and corner registration marks, floating on a faint drafting grid. Tabular numerals everywhere a number appears. Small-caps tracked labels (`.anno`) read like drawing annotations. Nothing is ambiguous; a deadline is a dimension, a status is a stamp, a list is a ruled table.
+The system refuses the generic "white card + rounded shadow" default outright. Cards are *sheets*: crisp-cornered rectangles with hairline frames and corner registration marks, floating on a faint drafting grid. Tabular numerals everywhere a number appears. Small-caps tracked labels (`.anno`) read like drawing annotations. Nothing is ambiguous; a deadline is a dimension, a status is plain text, a list is a ruled table.
 
 **Key Characteristics:**
 - Warm paper ground with a faint drafting grid; content lives on sheets, never directly on the grid
 - Hairline rules and crisp corners (3px max); depth by tonal wash, not heavy shadow
 - Blue = active work; vermillion = revision/late/destructive; green = reviewed/complete; gray = dormant (draft)
-- Statuses are rubber stamps (uppercase, bordered, dotted), not tinted pills
+- Statuses are plain text in cells and cards — never tinted pills and never bordered badges
 - Tabular numerals for all figures; small-caps tracked labels for all field/annotation text
  - The sidebar is a "drawing index" — a left rail of sheet entries, the active sheet marked as a rounded blue-wash pill
 
@@ -167,13 +165,13 @@ The system refuses the generic "white card + rounded shadow" default outright. C
 The palette reads like ink on drafting paper: warm neutrals for the surface, one engineering blue for active work, and status inks that each carry a single, non-negotiable meaning.
 
 ### Primary
-- **Engineering Blue** (#2050c9): the system's single active accent — primary buttons, links, focus rings, published/submitted stamps, the active nav pill. Deepened to **Blue Deep** (#163a94) on hover and **Blue Ink** (#0f2a6e) for stat figures and brand marks. Use sparingly; it is the "ink in use" color.
+- **Engineering Blue** (#2050c9): the system's single active accent — primary buttons, links, focus rings, published/submitted states, the active nav pill. Deepened to **Blue Deep** (#163a94) on hover and **Blue Ink** (#0f2a6e) for stat figures and brand marks. Use sparingly; it is the "ink in use" color.
 
 ### Secondary
-- **Vermillion** (#bf2a1e): revision ink only. Late/overdue stamps, destructive buttons, delete icons, error notices, "past due" states. Hover and destructive text deepen to **Red Deep** (#a52318) and **Red Ink** (#7f1d16). If a red element is not a revision or destruction, it is misused.
-- **Release Green** (#1a7a4b): reviewed/graded/complete stamps and success notices. Green never decorates; it always means "finished and approved."
+- **Vermillion** (#bf2a1e): revision ink only. Late/overdue states, destructive buttons, delete icons, error notices, "past due" states. Hover and destructive text deepen to **Red Deep** (#a52318) and **Red Ink** (#7f1d16). If a red element is not a revision or destruction, it is misused.
+- **Release Green** (#1a7a4b): reviewed/graded/complete states and success notices. Green never decorates; it always means "finished and approved."
 - **Notice Amber** (#8a6200): secondary warnings (e.g. "cannot edit after deadline"). Reserve for tertiary caution, never for the primary late state.
-- **Violet** (#5a3fc4): used for class/link metadata stamps and teacher-facing accents only.
+- **Violet** (#5a3fc4): used for class/link metadata accents only.
 
 ### Neutral
 - **Drafting Paper** (#f4f1ea): the page ground, with a faint drafting grid.
@@ -182,10 +180,10 @@ The palette reads like ink on drafting paper: warm neutrals for the surface, one
 - **Ink** (#1b2430): primary text, body, strong rules.
 - **Ink Soft** (#5a6472): secondary text, labels, table headers.
 - **Ink Faint** (#8b93a0): captions, revision notes, placeholder text.
-- **Slate** (#4b5563): gray stamps (Draft / inactive).
+- **Slate** (#4b5563): dormant/draft state text.
 
 ### Named Rules
-**The One-Ink Rule.** Blue for active work, vermillion for revision/destruction, green for completion, gray for dormant. Each color means exactly one thing; two states never share an ink. **The Rarity of Red Rule.** Vermillion appears on under ~10% of any screen. Its scarcity is what makes a late stamp alarming.
+**The One-Ink Rule.** Blue for active work, vermillion for revision/destruction, green for completion, gray for dormant. Each color means exactly one thing; two states never share an ink. **The Rarity of Red Rule.** Vermillion appears on under ~10% of any screen. Its scarcity is what makes a late state alarming.
 
 ## Typography
 
@@ -207,7 +205,7 @@ The palette reads like ink on drafting paper: warm neutrals for the surface, one
 - **Action Tile** (600 weight, 0.8rem): quick-action tiles on dashboards.
 - **Field Error** (400 weight, 0.76rem): inline validation messages.
 - **Stat Label** (700 weight, 0.62rem, 0.13em tracking, uppercase): labels on measurement blocks.
-- **Stamp** (700 weight, 0.66rem, 0.11em tracking, uppercase): status stamps.
+- **Status** (400 weight, 0.82rem): plain-text statuses in cells and cards.
 - **Table Header** (700 weight, 0.64rem, 0.12em tracking, uppercase): ruled-table column heads.
 - **Annotation Label** (600 weight, 0.68rem, 0.12–0.16em tracking, uppercase): `.anno` labels, field labels, title-block revision notes. This small-caps voice is the system's signature.
 
@@ -216,7 +214,7 @@ The palette reads like ink on drafting paper: warm neutrals for the surface, one
 
 ## Layout
 
-A fixed left rail ("drawing index," 16rem) plus a fluid main column capped at 6xl (72rem). The rail carries the brand block, the nav entries, and the user block with role stamp and sign-out. Each surface opens with a **title block**: the page name on the baseline left, the action button and/or a `REV · n items` revision note on the baseline right, closed by a strong hairline rule. Below it, content is laid on `.sheet` surfaces with 16–24px internal padding. Stat rows are 1/2/3/4-column grids that collapse to one column under 768px; card grids are 1/2/3-column (breakpoint 768px / 1024px). Modals center at 8vh from the top, max-width 30rem, and scroll internally rather than shrinking the viewport. Auth screens center a 26rem sheet over a warm classroom-photo backdrop (a paper-tone scrim and radial vignette keep the drafting identity and preserve legibility). The rhythm is the `--s1…--s7` scale (4 / 8 / 12 / 16 / 24 / 32 / 48px); 16px is the workhorse gutter.
+A fixed left rail ("drawing index," 16rem) plus a fluid main column capped at 6xl (72rem). The rail carries the brand block, the nav entries, and the user block with role text and sign-out. Each surface opens with a **title block**: the page name on the baseline left, the action button and/or a `REV · n items` revision note on the baseline right, closed by a strong hairline rule. Below it, content is laid on `.sheet` surfaces with 16–24px internal padding. Stat rows are 1/2/3/4-column grids that collapse to one column under 768px; card grids are 1/2/3-column (breakpoint 768px / 1024px). Modals center at 8vh from the top, max-width 30rem, and scroll internally rather than shrinking the viewport. Auth screens center a 26rem sheet over a warm classroom-photo backdrop (a paper-tone scrim and radial vignette keep the drafting identity and preserve legibility). The rhythm is the `--s1…--s7` scale (4 / 8 / 12 / 16 / 24 / 32 / 48px); 16px is the workhorse gutter.
 
 ## Elevation & Depth
 
@@ -227,7 +225,7 @@ Flat by default — depth is carried by tonal layering and hairline borders, not
 
 ## Shapes
 
-Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3px` on sheets, cards, modals, stamps (`--r`/`--r-sm`) — while **everything clickable rounds off** at `7px` (`--r-btn`) with buttons, action tiles, and the nav entries sitting at full `999px` pills for icon buttons. This is the Interactive Roundness Rule: the more a thing invites a tap, the rounder and more colored it becomes. Drafting still forbids 8px+ roundness on surfaces and any skeuomorphic bevel. Borders are 1px hairlines (`rgba(27,36,48,0.18)` at rest, `0.34` for strong rules like title-block closures and table headers). The signature geometry is the corner registration mark: `.sheet` and `.auth-sheet` carry a small L-shaped tick at their top-left and bottom-right corners, like a machined drawing sheet. Statuses are rectangular stamps — 1px currentColor border, uppercase tracked text, a 5px dot — rather than filled pills.
+Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3px` on sheets, cards, modals (`--r`/`--r-sm`) — while **everything clickable rounds off** at `7px` (`--r-btn`) with buttons, action tiles, and the nav entries sitting at full `999px` pills for icon buttons. This is the Interactive Roundness Rule: the more a thing invites a tap, the rounder and more colored it becomes. Drafting still forbids 8px+ roundness on surfaces and any skeuomorphic bevel. Borders are 1px hairlines (`rgba(27,36,48,0.18)` at rest, `0.34` for strong rules like title-block closures and table headers). The signature geometry is the corner registration mark: `.sheet` and `.auth-sheet` carry a small L-shaped tick at their top-left and bottom-right corners, like a machined drawing sheet. Statuses are plain text — no badge, no border, no tinted pill.
 
 ## Components
 
@@ -242,10 +240,9 @@ Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3p
 - **Focus:** 2px Engineering Blue outline at 2px offset on all controls.
 - **Disabled:** 50% opacity, `not-allowed` cursor.
 
-### Stamps
-- **Style:** uppercase 0.66rem/700, 0.11em tracking, 1px currentColor border, 2px radius, 5px dot, 0.18/0.5rem padding.
-- **Variants:** Blue = Published/Submitted/Due; Green = Reviewed; Red = Late/Past due; Amber = caution; Purple = class/link metadata; Gray = Draft/dormant.
-- **Role:** statuses are always stamps, never colored pill backgrounds. Capitalized raw in cells, stamps carry their own casing.
+### Statuses
+- **Style:** plain text, 0.82rem/400, Ink-Soft color, no border or background.
+- **Meaning:** text in cells and cards carries the state (Submitted / Due / Overdue / Reviewed / Late / Draft / Published); color meaning follows the One-Ink Rule when a tint is applied, but no badge chrome is used.
 
 ### Cards / Containers (`.sheet`)
 - **Corner Style:** crisp (3px radius), with corner registration marks.
@@ -265,7 +262,7 @@ Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3p
 - **States:** hover gains a faint ink wash; active is an Engineering Blue wash pill with Blue-Ink text, 600 weight, `aria-current="page"`.
 
 ### Table (`.table-sheet`)
-- **Style:** full-width, collapsed borders, 0.86rem cells, 0.64rem uppercase tracked headers, strong hairline under headers, hairline row rules, 0.72/0.9rem cell padding, blue-wash row hover. Numbers use tabular figures. All columns — including the Actions column — center their content, so buttons and stamps sit on a shared optical axis.
+- **Style:** full-width, collapsed borders, 0.86rem cells, 0.64rem uppercase tracked headers, strong hairline under headers, hairline row rules, 0.72/0.9rem cell padding, blue-wash row hover. Numbers use tabular figures. All columns — including the Actions column — center their content, so buttons and status text sit on a shared optical axis.
 
 ### Signature Components
 - **Title Block:** baseline-aligned page title (left) with action button and/or `REV · n items` note (right), closed by a strong hairline. Present on every surface.
@@ -276,15 +273,15 @@ Corners carry a deliberate hierarchy: **structural** surfaces stay crisp — `3p
 
 ### Do:
 - **Do** open every surface with a title block: name left, action/revision note right, strong hairline below.
-- **Do** express statuses as stamps and figures as tabular numerals.
-- **Do** keep corners at 3px (2px for stamps and icon buttons).
+- **Do** express statuses as plain text and figures as tabular numerals.
+- **Do** keep corners at 3px (2px for icon buttons).
 - **Do** use vermillion only for late/overdue/destructive — nothing else.
 - **Do** introduce every metadata value with a small-caps annotation label.
 - **Do** place all content on sheets; the drafting grid is the ground, never a backdrop behind readable content.
 
 ### Don't:
 - **Don't** use white cards with `rounded-lg`-style 8px+ radius, heavy shadows, or gradient fills — the sheet replaces the card.
-- **Don't** render statuses as colored pill backgrounds; use bordered stamps.
+- **Don't** render statuses as colored pill backgrounds or bordered badges; use plain text.
 - **Don't** mix green into constructive buttons or blue into completion states; the One-Ink Rule holds.
-- **Don't** let any screen exceed one filled accent color at a time beyond status stamps.
+- **Don't** let any screen exceed one filled accent color at a time.
 - **Don't** add motion to rest states; transitions are brief (0.12–0.15s) color/border fades only.

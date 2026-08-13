@@ -26,19 +26,6 @@ export default function AdminSubmissionsPage() {
     fetchSubmissions();
   }, []);
 
-  const stampClass = (status: string) => {
-    switch (status) {
-      case "Reviewed":
-        return "stamp stamp-green";
-      case "Late":
-        return "stamp stamp-red";
-      case "Submitted":
-        return "stamp stamp-blue";
-      default:
-        return "stamp stamp-gray";
-    }
-  };
-
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
       <DashboardLayout allowedRoles={["Admin"]}>
@@ -72,9 +59,7 @@ export default function AdminSubmissionsPage() {
                     <tr key={s.id}>
                       <td className="font-medium">{s.assignmentTitle}</td>
                       <td>{s.studentName}</td>
-                      <td>
-                        <span className={stampClass(s.status)}>{s.status}</span>
-                      </td>
+                      <td className="text-sm text-[var(--ink-soft)]">{s.status}</td>
                       <td className="tnum">{s.marks ?? "Not graded"}</td>
                       <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}

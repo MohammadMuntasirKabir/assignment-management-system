@@ -48,13 +48,13 @@ describe("StudentSubmissionsPage", () => {
     mockGet.mockResolvedValue({ data: submissions });
   });
 
-  it("shows the My Graded Submissions header", async () => {
+  it("shows the My Submissions header", async () => {
     render(<StudentSubmissionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText("Graded Essay")).toBeInTheDocument();
     });
-    expect(screen.getByRole("heading", { name: "My Graded Submissions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Submissions" })).toBeInTheDocument();
   });
 
   it("shows only submitted and graded assignments (excludes drafts)", async () => {

@@ -67,7 +67,7 @@ export default function RegisterPage() {
         <div className="auth-body">
           <h1 className="auth-title">Create your account</h1>
           <p className="auth-sub">
-            New accounts open as <span className="stamp stamp-blue">Student</span>.{" "}
+            New accounts open as <span className="font-semibold text-[var(--blue-ink)]">Student</span>.{" "}
             An administrator can change your role later.
           </p>
 

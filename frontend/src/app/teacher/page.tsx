@@ -39,8 +39,8 @@ export default function TeacherDashboard() {
     fetchClassSubjects();
   }, []);
 
-  const stampClass = (status: string) =>
-    status === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
+  const statusText = (status: string) =>
+    status === "Published" ? "Published" : "Draft";
 
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
@@ -91,9 +91,7 @@ export default function TeacherDashboard() {
                       <td className="font-medium">{a.title}</td>
                       <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                       <td className="tnum">{a.maxMarks}</td>
-                      <td>
-                        <span className={stampClass(a.status)}>{a.status}</span>
-                      </td>
+                      <td className="text-sm text-[var(--ink-soft)]">{statusText(a.status)}</td>
                     </tr>
                   ))}
                 </tbody>

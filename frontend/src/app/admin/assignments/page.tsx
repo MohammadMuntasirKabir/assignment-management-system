@@ -36,8 +36,8 @@ export default function AdminAssignmentsPage() {
     return labels[status] || status;
   };
 
-  const stampClass = (status: string) =>
-    statusLabel(status) === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
+  const statusText = (status: string) =>
+    statusLabel(status) === "Published" ? "Published" : "Draft";
 
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
@@ -78,9 +78,7 @@ export default function AdminAssignmentsPage() {
                       <td>{a.teacherName}</td>
                       <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                       <td className="tnum">{a.maxMarks}</td>
-                      <td>
-                        <span className={stampClass(a.status)}>{statusLabel(a.status)}</span>
-                      </td>
+                      <td className="text-sm text-[var(--ink-soft)]">{statusText(a.status)}</td>
                     </tr>
                   ))}
                 </tbody>

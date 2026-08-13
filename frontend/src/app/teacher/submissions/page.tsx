@@ -60,19 +60,6 @@ export default function TeacherSubmissionsPage() {
     }
   };
 
-  const stampClass = (status: string) => {
-    switch (status) {
-      case "Reviewed":
-        return "stamp stamp-green";
-      case "Late":
-        return "stamp stamp-red";
-      case "Submitted":
-        return "stamp stamp-blue";
-      default:
-        return "stamp stamp-gray";
-    }
-  };
-
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
       <DashboardLayout allowedRoles={["Teacher"]}>
@@ -110,9 +97,7 @@ export default function TeacherSubmissionsPage() {
                       <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
                       </td>
-                      <td>
-                        <span className={stampClass(s.status)}>{s.status}</span>
-                      </td>
+                      <td className="text-sm text-[var(--ink-soft)]">{s.status}</td>
                       <td className="tnum">{s.marks ?? "Not graded"}</td>
                       <td className="whitespace-nowrap">
                         <button

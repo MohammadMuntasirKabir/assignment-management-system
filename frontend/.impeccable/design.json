@@ -322,20 +322,20 @@
       "css": ".ds-field{display:flex;flex-direction:column;gap:8px}.ds-label{font:600 0.68rem/1.4 ui-sans-serif,system-ui,sans-serif;text-transform:uppercase;letter-spacing:0.12em;color:#5a6472}.ds-input{width:100%;box-sizing:border-box;background:#fffef9;border:1px solid rgba(27,36,48,0.34);border-radius:3px;padding:0.55rem 0.7rem;font:400 0.9rem/1.4 ui-sans-serif,system-ui,sans-serif;color:#1b2430;transition:border-color 0.15s ease,box-shadow 0.15s ease}.ds-input::placeholder{color:#8b93a0}.ds-input:focus{outline:none;border-color:#2050c9;box-shadow:0 0 0 3px rgba(32,80,201,0.09)}.ds-input[aria-invalid=\"true\"]{border-color:#bf2a1e}"
     },
     {
-      "name": "Status Stamp (Blue)",
-      "kind": "chip",
-      "refersTo": "stamp",
-      "description": "Published / submitted / active statuses are bordered rubber stamps, not pills.",
-      "html": "<span class=\"ds-stamp ds-stamp-blue\">Published</span>",
-      "css": ".ds-stamp{display:inline-flex;align-items:center;gap:6px;font:700 0.66rem/1.25 ui-sans-serif,system-ui,sans-serif;text-transform:uppercase;letter-spacing:0.11em;padding:0.18rem 0.5rem;border:1px solid currentColor;border-radius:2px}.ds-stamp::before{content:\"\";width:5px;height:5px;border-radius:50%;background-color:currentColor}.ds-stamp-blue{color:#2050c9;background:rgba(32,80,201,0.09)}"
+      "name": "Status Text (Blue)",
+      "kind": "text",
+      "refersTo": "status",
+      "description": "Published / submitted / active statuses are plain text, not pills or bordered badges.",
+      "html": "<span class=\"ds-status ds-status-blue\">Published</span>",
+      "css": ".ds-status{font:400 0.82rem/1.4 ui-sans-serif,system-ui,sans-serif;color:#5a6472}.ds-status-blue{color:#2050c9}"
     },
     {
-      "name": "Status Stamp (Red / Late)",
-      "kind": "chip",
-      "refersTo": "stamp",
+      "name": "Status Text (Red / Late)",
+      "kind": "text",
+      "refersTo": "status",
       "description": "Late / past-due / destructive status. Vermillion appears rarely, and only here.",
-      "html": "<span class=\"ds-stamp ds-stamp-red\">Late</span>",
-      "css": ".ds-stamp{display:inline-flex;align-items:center;gap:6px;font:700 0.66rem/1.25 ui-sans-serif,system-ui,sans-serif;text-transform:uppercase;letter-spacing:0.11em;padding:0.18rem 0.5rem;border:1px solid currentColor;border-radius:2px}.ds-stamp::before{content:\"\";width:5px;height:5px;border-radius:50%;background-color:currentColor}.ds-stamp-red{color:#bf2a1e;background:rgba(191,42,30,0.09)}"
+      "html": "<span class=\"ds-status ds-status-red\">Late</span>",
+      "css": ".ds-status{font:400 0.82rem/1.4 ui-sans-serif,system-ui,sans-serif;color:#5a6472}.ds-status-red{color:#bf2a1e}"
     },
     {
       "name": "Navigation Item",
@@ -364,12 +364,12 @@
   ],
   "narrative": {
     "northStar": "The Drawing Sheet",
-    "overview": "This is not a SaaS dashboard \u2014 it is an engineering drawing of the assignment cycle. Every screen is read the way a machinist reads a sheet: warm drafting paper as the ground, hairline ink rules separating information, a title block naming each surface, stamp-style statuses where any other system would reach for a tinted pill, and engineering-blue as the only active ink. Vermillion appears solely for revision \u2014 a late submission, an overdue deadline, a destructive action \u2014 because in drafting, red is the color of \"change this, this is wrong.\" The system refuses the generic \"white card + rounded shadow\" default outright. Cards are sheets: crisp-cornered rectangles with hairline frames and corner registration marks, floating on a faint drafting grid. Tabular numerals everywhere a number appears. Small-caps tracked labels read like drawing annotations. Nothing is ambiguous; a deadline is a dimension, a status is a stamp, a list is a ruled table.",
+    "overview": "This is not a SaaS dashboard \u2014 it is an engineering drawing of the assignment cycle. Every screen is read the way a machinist reads a sheet: warm drafting paper as the ground, hairline ink rules separating information, a title block naming each surface, plain-text statuses where any other system would reach for a tinted pill, and engineering-blue as the only active ink. Vermillion appears solely for revision \u2014 a late submission, an overdue deadline, a destructive action \u2014 because in drafting, red is the color of \"change this, this is wrong.\" The system refuses the generic \"white card + rounded shadow\" default outright. Cards are sheets: crisp-cornered rectangles with hairline frames and corner registration marks, floating on a faint drafting grid. Tabular numerals everywhere a number appears. Small-caps tracked labels read like drawing annotations. Nothing is ambiguous; a deadline is a dimension, a status is plain text, a list is a ruled table.",
     "keyCharacteristics": [
       "Warm paper ground with a faint drafting grid; content lives on sheets, never directly on the grid",
       "Hairline rules and crisp corners (3px max); depth by tonal wash, not heavy shadow",
       "Blue = active work; vermillion = revision/late/destructive; green = reviewed/complete; gray = dormant (draft)",
-      "Statuses are rubber stamps (uppercase, bordered, dotted), not tinted pills",
+      "Statuses are plain text in cells and cards, never tinted pills or bordered badges",
       "Tabular numerals for all figures; small-caps tracked labels for all field/annotation text",
       "The sidebar is a \"drawing index\" \u2014 a left rail of sheet entries with a blue edge on the active sheet"
     ],
@@ -381,7 +381,7 @@
       },
       {
         "name": "The Rarity of Red Rule",
-        "body": "Vermillion appears on under ~10% of any screen. Its scarcity is what makes a late stamp alarming.",
+        "body": "Vermillion appears on under ~10% of any screen. Its scarcity is what makes a late state alarming.",
         "section": "colors"
       },
       {
@@ -407,17 +407,17 @@
     ],
     "dos": [
       "Do open every surface with a title block: name left, action/revision note right, strong hairline below.",
-      "Do express statuses as stamps and figures as tabular numerals.",
-      "Do keep corners at 3px (2px for stamps and icon buttons).",
+      "Do express statuses as plain text and figures as tabular numerals.",
+      "Do keep corners at 3px (2px for icon buttons).",
       "Do use vermillion only for late/overdue/destructive \u2014 nothing else.",
       "Do introduce every metadata value with a small-caps annotation label.",
       "Do place all content on sheets; the drafting grid is the ground, never a backdrop behind readable content."
     ],
     "donts": [
       "Don't use white cards with rounded-lg-style 8px+ radius, heavy shadows, or gradient fills \u2014 the sheet replaces the card.",
-      "Don't render statuses as colored pill backgrounds; use bordered stamps.",
+      "Don't render statuses as colored pill backgrounds or bordered badges; use plain text.",
       "Don't mix green into constructive buttons or blue into completion states; the One-Ink Rule holds.",
-      "Don't let any screen exceed one filled accent color at a time beyond status stamps.",
+      "Don't let any screen exceed one filled accent color at a time.",
       "Don't add motion to rest states; transitions are brief (0.12\u20130.15s) color/border fades only."
     ]
   }

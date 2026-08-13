@@ -97,7 +97,7 @@ export default function DashboardLayout({ children, allowedRoles }: DashboardLay
         <div className="px-5 py-4 border-t border-[var(--hairline-strong)]">
           <div className="flex items-center justify-between gap-2 mb-3">
             <p className="text-sm font-semibold text-[var(--ink)] truncate">{user.name}</p>
-            <span className="stamp stamp-blue shrink-0">{user.role}</span>
+            <span className="text-sm text-[var(--ink-soft)] shrink-0">{user.role}</span>
           </div>
           <p className="anno mb-3 truncate" title={user.email}>{user.email}</p>
           <button onClick={logout} className="btn btn-secondary w-full">

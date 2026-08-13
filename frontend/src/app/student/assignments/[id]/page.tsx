@@ -96,13 +96,7 @@ export default function StudentAssignmentDetail({ params }: StudentAssignmentDet
   }
 
   const isOverdue = new Date() > new Date(assignment.deadline);
-  const submissionStamp = existingSubmission
-    ? existingSubmission.status === "Reviewed"
-      ? "stamp stamp-green"
-      : existingSubmission.status === "Late"
-      ? "stamp stamp-red"
-      : "stamp stamp-blue"
-    : "stamp stamp-gray";
+  const submissionStatus = existingSubmission ? existingSubmission.status : "Draft";
 
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
@@ -110,11 +104,9 @@ export default function StudentAssignmentDetail({ params }: StudentAssignmentDet
         <div className="max-w-4xl mx-auto">
           <div className="title-block">
             <h1>{assignment.title}</h1>
-            {isOverdue ? (
-              <span className="stamp stamp-red whitespace-nowrap">Overdue</span>
-            ) : (
-              <span className="stamp stamp-blue whitespace-nowrap">Active</span>
-            )}
+            <span className="text-sm text-[var(--ink-soft)] whitespace-nowrap">
+              {isOverdue ? "Overdue" : "Active"}
+            </span>
           </div>
 
           <div className="sheet p-5 mb-6">
@@ -136,7 +128,7 @@ export default function StudentAssignmentDetail({ params }: StudentAssignmentDet
             <div className="sheet p-5 mb-6">
               <div className="anno mb-3">My Submission</div>
               <div className="flex items-center gap-3 mb-2">
-                <span className={submissionStamp}>{existingSubmission.status}</span>
+                <span className="text-sm text-[var(--ink-soft)]">{submissionStatus}</span>
                 {existingSubmission.submittedAt && (
                   <span className="text-xs text-ink-faint tnum">
                     {new Date(existingSubmission.submittedAt).toLocaleString()}

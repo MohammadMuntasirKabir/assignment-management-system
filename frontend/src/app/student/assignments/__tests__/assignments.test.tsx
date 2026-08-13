@@ -104,21 +104,23 @@ describe("StudentAssignmentsPage", () => {
     });
   });
 
-  it("shows only due (unsubmitted, before-deadline) assignments with a Due ribbon by default", async () => {
+  it("shows only due (unsubmitted, before-deadline) assignments with a Due status by default", async () => {
     render(<StudentAssignmentsPage />);
 
     await waitFor(() => {
       expect(screen.getByText("Due Essay")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Due", { selector: ".stamp" })).toBeInTheDocument();
+    const card = screen.getByText("Due Essay").closest(".sheet") as HTMLElement;
+    expect(card.textContent).toContain("Due");
+    expect(card.textContent).not.toContain("Submitted");
     expect(screen.queryByText("Submitted Report")).not.toBeInTheDocument();
     expect(screen.queryByText("Missed Homework")).not.toBeInTheDocument();
     expect(screen.queryByText("2 items")).not.toBeInTheDocument();
     expect(screen.getByText("1 items")).toBeInTheDocument();
   });
 
-  it("shows submitted assignments with a Submitted ribbon via the Submitted filter", async () => {
+  it("shows submitted assignments with a Submitted status via the Submitted filter", async () => {
     render(<StudentAssignmentsPage />);
 
     await waitFor(() => {
@@ -131,12 +133,13 @@ describe("StudentAssignmentsPage", () => {
       expect(screen.getByText("Submitted Report")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Submitted", { selector: ".stamp" })).toBeInTheDocument();
+    const card = screen.getByText("Submitted Report").closest(".sheet") as HTMLElement;
+    expect(card.textContent).toContain("Submitted");
     expect(screen.queryByText("Due Essay")).not.toBeInTheDocument();
     expect(screen.queryByText("Missed Homework")).not.toBeInTheDocument();
   });
 
-  it("shows overdue unsubmitted assignments without a Due ribbon via the Overdue filter", async () => {
+  it("shows overdue unsubmitted assignments without a Due status via the Overdue filter", async () => {
     render(<StudentAssignmentsPage />);
 
     await waitFor(() => {
@@ -149,8 +152,9 @@ describe("StudentAssignmentsPage", () => {
       expect(screen.getByText("Missed Homework")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Overdue", { selector: ".stamp" })).toBeInTheDocument();
-    expect(screen.queryByText("Due", { selector: ".stamp" })).not.toBeInTheDocument();
+    const card = screen.getByText("Missed Homework").closest(".sheet") as HTMLElement;
+    expect(card.textContent).toContain("Overdue");
+    expect(card.textContent).not.toContain("Due");
     expect(screen.queryByText("Due Essay")).not.toBeInTheDocument();
     expect(screen.queryByText("Submitted Report")).not.toBeInTheDocument();
   });

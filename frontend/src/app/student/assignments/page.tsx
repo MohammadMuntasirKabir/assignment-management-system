@@ -60,14 +60,14 @@ export default function StudentAssignmentsPage() {
 
   const visibleAssignments = assignments.filter(matchesFilter);
 
-  const ribbonFor = (a: Assignment) => {
+  const statusFor = (a: Assignment) => {
     if (submittedIds.has(a.id)) {
-      return <span className="stamp stamp-green whitespace-nowrap">Submitted</span>;
+      return "Submitted";
     }
     if (isOverdue(a)) {
-      return <span className="stamp stamp-red whitespace-nowrap">Overdue</span>;
+      return "Overdue";
     }
-    return <span className="stamp stamp-blue whitespace-nowrap">Due</span>;
+    return "Due";
   };
 
   return (
@@ -105,7 +105,7 @@ export default function StudentAssignmentsPage() {
                 <div key={a.id} className="sheet p-5 flex flex-col gap-4">
                   <div className="flex justify-between items-start gap-3">
                     <h2 className="font-semibold text-lg leading-snug">{a.title}</h2>
-                    {ribbonFor(a)}
+                    <span className="text-sm text-[var(--ink-soft)] whitespace-nowrap">{statusFor(a)}</span>
                   </div>
                   <p className="text-sm text-gray-700 line-clamp-3">{a.description}</p>
                   <div className="text-sm space-y-1">

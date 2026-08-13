@@ -215,7 +215,7 @@ export default function AdminUsersPage() {
                       <td className="font-semibold text-[var(--ink)]">
                         {user.name}
                         {self && (
-                          <span className="stamp stamp-gray ml-2">you</span>
+                          <span className="ml-2 text-xs text-[var(--ink-soft)]">you</span>
                         )}
                       </td>
                       <td className="tnum text-[var(--ink-soft)]">{user.email}</td>

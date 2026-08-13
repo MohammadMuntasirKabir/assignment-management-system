@@ -38,27 +38,14 @@ export default function StudentDashboard() {
   const pendingCount = submissions.filter(s => s.status === "Submitted" || s.status === "Late").length;
   const gradedCount = submissions.filter(s => s.status === "Reviewed").length;
 
-  const assignmentRibbon = (a: Assignment) => {
+  const assignmentStatus = (a: Assignment) => {
     if (submittedIds.has(a.id)) {
-      return <span className="stamp stamp-green whitespace-nowrap">Submitted</span>;
+      return "Submitted";
     }
     if (isOverdue(a)) {
-      return <span className="stamp stamp-red whitespace-nowrap">Overdue</span>;
+      return "Overdue";
     }
-    return <span className="stamp stamp-blue whitespace-nowrap">Due</span>;
-  };
-
-  const stampClass = (status: string) => {
-    switch (status) {
-      case "Reviewed":
-        return "stamp stamp-green";
-      case "Late":
-        return "stamp stamp-red";
-      case "Submitted":
-        return "stamp stamp-blue";
-      default:
-        return "stamp stamp-gray";
-    }
+    return "Due";
   };
 
   return (
@@ -112,9 +99,7 @@ export default function StudentDashboard() {
                           <td className="font-medium">{a.title}</td>
                           <td>{a.subjectName}</td>
                           <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
-                          <td>
-                            {assignmentRibbon(a)}
-                          </td>
+                          <td className="text-sm text-[var(--ink-soft)]">{assignmentStatus(a)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -140,9 +125,7 @@ export default function StudentDashboard() {
                       {submissions.map((s) => (
                         <tr key={s.id}>
                           <td>{s.assignmentTitle}</td>
-                          <td>
-                            <span className={stampClass(s.status)}>{s.status}</span>
-                          </td>
+                          <td className="text-sm text-[var(--ink-soft)]">{s.status}</td>
                           <td className="tnum">{s.marks ?? "—"}</td>
                           <td>{s.feedback ?? "—"}</td>
                         </tr>

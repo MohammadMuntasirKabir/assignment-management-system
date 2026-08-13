@@ -116,7 +116,7 @@ describe("StudentDashboard", () => {
     expect(block?.querySelector(".stat-value")).toHaveTextContent("2");
   });
 
-  it("shows a Submitted ribbon for submitted assignments", async () => {
+  it("shows a Submitted status for submitted assignments", async () => {
     render(<StudentDashboard />);
 
     await waitFor(() => {
@@ -124,10 +124,12 @@ describe("StudentDashboard", () => {
     });
 
     const sheet = screen.getByText("My Assignments").closest(".sheet") as HTMLElement;
-    expect(sheet.querySelector(".stamp-green")).toHaveTextContent("Submitted");
+    const row = Array.from(sheet.querySelectorAll("tr"))
+      .find((tr) => tr.textContent?.includes("Submitted Report"));
+    expect(row?.textContent).toContain("Submitted");
   });
 
-  it("shows a Due ribbon (not Overdue) for unsubmitted before-deadline assignments", async () => {
+  it("shows a Due status (not Overdue) for unsubmitted before-deadline assignments", async () => {
     render(<StudentDashboard />);
 
     await waitFor(() => {
@@ -135,8 +137,10 @@ describe("StudentDashboard", () => {
     });
 
     const sheet = screen.getByText("My Assignments").closest(".sheet") as HTMLElement;
-    expect(sheet.querySelector(".stamp-blue")).toHaveTextContent("Due");
-    expect(sheet.querySelector(".stamp-red")).toBeNull();
+    const row = Array.from(sheet.querySelectorAll("tr"))
+      .find((tr) => tr.textContent?.includes("Due Essay"));
+    expect(row?.textContent).toContain("Due");
+    expect(row?.textContent).not.toContain("Overdue");
   });
 
   it("hides overdue unsubmitted assignments from the assignments table", async () => {

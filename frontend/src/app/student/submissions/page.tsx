@@ -34,7 +34,7 @@ export default function StudentSubmissionsPage() {
       <DashboardLayout allowedRoles={["Student"]}>
         <div>
           <div className="title-block">
-            <h1>My Graded Submissions</h1>
+            <h1>My Submissions</h1>
             <span className="tb-note">{gradedSubmissions.length} items</span>
           </div>
 
