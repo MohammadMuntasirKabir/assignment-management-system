@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
@@ -26,13 +27,15 @@ export default function StudentSubmissionsPage() {
     fetchSubmissions();
   }, []);
 
+  const gradedSubmissions = submissions.filter((s) => s.status !== "Draft");
+
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
       <DashboardLayout allowedRoles={["Student"]}>
         <div>
           <div className="title-block">
-            <h1>My Submissions</h1>
-            <span className="tb-note">{submissions.length} items</span>
+            <h1>My Graded Submissions</h1>
+            <span className="tb-note">{gradedSubmissions.length} items</span>
           </div>
 
           {loading ? (
@@ -40,30 +43,37 @@ export default function StudentSubmissionsPage() {
               <span className="spinner"></span>
               Loading…
             </div>
-          ) : submissions.length === 0 ? (
-            <div className="empty-state">No submissions yet.</div>
+          ) : gradedSubmissions.length === 0 ? (
+            <div className="empty-state">No submitted or graded assignments yet.</div>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">
                 <thead>
                   <tr>
                     <th>Assignment</th>
-                    <th>Status</th>
                     <th>Marks</th>
                     <th>Submitted</th>
                     <th>Feedback</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {submissions.map((s) => (
+                  {gradedSubmissions.map((s) => (
                     <tr key={s.id}>
                       <td className="font-medium">{s.assignmentTitle}</td>
-                      <td className="text-sm text-ink-soft">{s.status}</td>
                       <td className="tnum">{s.marks !== null ? `${s.marks}` : "Not graded"}</td>
                       <td className="tnum">
                         {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—"}
                       </td>
                       <td>{s.feedback || "—"}</td>
+                      <td>
+                        <Link
+                          href={`/student/assignments/${s.assignmentId}`}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          View
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
