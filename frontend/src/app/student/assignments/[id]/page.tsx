@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -9,7 +9,7 @@ import { getStoredUser } from "@/lib/auth";
 import { Assignment, Submission, CreateSubmissionDto } from "@/lib/types";
 
 interface StudentAssignmentDetailProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function StudentAssignmentDetail({ params }: StudentAssignmentDetailProps) {
@@ -19,7 +19,7 @@ export default function StudentAssignmentDetail({ params }: StudentAssignmentDet
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-  const { id } = params;
+  const { id } = use(params);
 
   useEffect(() => {
     const fetchData = async () => {
