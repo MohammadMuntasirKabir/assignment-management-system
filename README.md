@@ -10,7 +10,7 @@ A role-based web application for schools and colleges to manage assignments, sub
 - **Student dashboard** — View published assignments for enrolled classes. Submit assignments and update submissions before the deadline. View submission status, marks, and teacher feedback.
 - **Business rules enforced** — Draft/published assignment states, deadline enforcement (late submissions flagged), duplicate submission prevention, marks cannot exceed max marks.
 - **API documentation** — Interactive Swagger UI at `/swagger` on the backend.
-- **Unit tested** — 70 backend tests (xUnit) and 59 frontend tests (Jest + React Testing Library).
+- **Unit tested** — 88 backend tests (xUnit + FluentAssertions) and 83 frontend tests (Jest + React Testing Library).
 
 ## Technology Stack
 
@@ -147,6 +147,10 @@ The connection string in `appsettings.json`:
 }
 ```
 
+**Manual setup alternative.** The `database/` folder ships a generated schema script and sample data for anyone who prefers not to rely on EF:
+- `database/migrations.sql` — full schema script (both EF migrations). Apply with `psql -U asm_user -d assignment_mgmt -f database/migrations.sql`.
+- `database/seed_data.sql` — sample records for the core entities from the original dataset. Note that `DbSeeder` (auto-run on every application startup when the database is empty) is the **canonical** seed and produces a much larger demo dataset (8 teachers, 36 students, 6 classes, 8 subjects, 72 assignments, 1040 submissions).
+
 ### 4. Frontend Environment
 
 Create `.env.local` in the `frontend/` directory (already provided as `.env.local`):
@@ -186,7 +190,8 @@ Tests cover:
 - Auth helpers (role mapping, cookie persistence)
 - DashboardLayout per-role navigation
 - Student dashboard, assignments list, and submissions pages
-- Admin users, class-subjects, and student workflow pages
+- Admin users, class-subjects, enrollments, and teacher-assignments pages (CRUD + edit flows)
+- Startech-style pagination component (PREV/NEXT, numbered window, showing-range summary)
 
 ## Demo Credentials
 
@@ -197,8 +202,8 @@ Tests cover:
 | Student | student1@example.com | student123 |
 
 Additional seeded users:
-- teacher2@example.com / teacher123
-- student2@example.com through student5@example.com / student123
+- teacher1@example.com through teacher8@example.com / teacher123
+- student1@example.com through student36@example.com / student123
 
 ## API Documentation
 
@@ -218,9 +223,11 @@ Once the backend is running, the interactive API documentation is available at:
 - `DELETE /api/admin/users/{id}` — Delete a user
 - `GET/POST/PUT/DELETE /api/admin/classes` — Manage classes
 - `GET/POST/PUT/DELETE /api/admin/subjects` — Manage subjects
-- `GET/POST/DELETE /api/admin/class-subjects` — Manage class-subject links
+- `GET/POST/PUT/DELETE /api/admin/class-subjects` — Manage class-subject links
 - `POST /api/admin/assign-teacher` — Assign a teacher to a class-subject
+- `PUT /api/admin/teacher-assignments/{id}` — Update a teacher assignment
 - `POST /api/admin/enroll-student` — Enroll a student in a class
+- `PUT /api/admin/enrollments/{id}` — Update a student enrollment
 - `GET /api/admin/assignments` — View all assignments
 - `GET /api/admin/submissions` — View all submissions
 
