@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@/test-utils/mocks";
-import { mockGet, mockPost, mockDelete } from "@/test-utils/mocks";
+import { mockGet, mockPost, mockPut, mockDelete } from "@/test-utils/mocks";
 import AdminTeacherAssignmentsPage from "@/app/admin/teacher-assignments/page";
 
 
@@ -29,7 +29,7 @@ jest.mock("@/lib/api", () => ({
   __esModule: true,
   default: {
     get: (...args: unknown[]) => mockGet(...args),
-    put: jest.fn(),
+    put: (...args: unknown[]) => mockPut(...args),
     post: (...args: unknown[]) => mockPost(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
   },
@@ -61,6 +61,7 @@ describe("AdminTeacherAssignmentsPage", () => {
       return Promise.resolve({ data: classSubjects });
     });
     mockPost.mockResolvedValue({ data: {} });
+    mockPut.mockResolvedValue({ data: {} });
     mockDelete.mockResolvedValue({});
   });
 
@@ -104,6 +105,25 @@ describe("AdminTeacherAssignmentsPage", () => {
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith("/api/admin/assign-teacher", {
+        teacherId: "u1",
+        classSubjectId: "cs2",
+      });
+    });
+  });
+
+  it("edits a teacher assignment", async () => {
+    render(<AdminTeacherAssignmentsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Edit Alice in Class 6 – English" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Alice in Class 6 – English" }));
+    fireEvent.change(screen.getByLabelText("Class–Subject"), { target: { value: "cs2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockPut).toHaveBeenCalledWith("/api/admin/teacher-assignments/ta1", {
         teacherId: "u1",
         classSubjectId: "cs2",
       });

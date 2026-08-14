@@ -7,12 +7,16 @@ import api, { getErrorMessage } from "@/lib/api";
 import { Submission, GradeSubmissionDto } from "@/lib/types";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/Pagination";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+
+const PAGE_SIZE = 10;
 
 export default function TeacherSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [gradingId, setGradingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [gradeForm, setGradeForm] = useState({ marks: 0, feedback: "", status: "Reviewed" as "Reviewed" | "Submitted" | "Late" | "Draft" });
 
   const fetchSubmissions = async () => {
@@ -30,6 +34,10 @@ export default function TeacherSubmissionsPage() {
   useEffect(() => {
     fetchSubmissions();
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(submissions.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedSubmissions = submissions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const openGradeModal = (submission: Submission) => {
     setGradingId(submission.id);
@@ -55,6 +63,7 @@ export default function TeacherSubmissionsPage() {
       };
       await api.put(`/api/teacher/submissions/${gradingId}/grade`, payload);
       closeGradeModal();
+      setPage(1);
       fetchSubmissions();
     } catch (err) {
       console.error("Failed to grade:", err);
@@ -88,7 +97,7 @@ export default function TeacherSubmissionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {submissions.map((s) => (
+                  {pagedSubmissions.map((s) => (
                     <tr key={s.id}>
                       <td className="font-medium">{s.assignmentTitle}</td>
                       <td>{s.studentName}</td>
@@ -108,6 +117,12 @@ export default function TeacherSubmissionsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={submissions.length}
+                onPageChange={setPage}
+              />
             </div>
           )}
 

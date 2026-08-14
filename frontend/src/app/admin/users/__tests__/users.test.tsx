@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import "@/test-utils/mocks";
 import { mockGet, mockPut, mockPost, mockDelete, mockSetSession, mockLogout } from "@/test-utils/mocks";
 import AdminUsersPage from "@/app/admin/users/page";
@@ -59,7 +59,8 @@ describe("AdminUsersPage", () => {
     });
     expect(screen.getByText("Student")).toBeInTheDocument();
     expect(screen.getByText("Admin")).toBeInTheDocument();
-    expect(screen.queryByText(/^[0-2]$/)).not.toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).queryByText(/^[0-2]$/)).not.toBeInTheDocument();
   });
 
   it("shows only the role in the role column", async () => {
@@ -253,14 +254,9 @@ describe("AdminUsersPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Alice")).toBeInTheDocument();
     });
-    const paginationInfo = (text: string) =>
-      screen.getByText(
-        (_, el) => el?.children.length === 0 && (el?.textContent?.includes(text) ?? false)
-      );
-    expect(paginationInfo("Page 1 of 2")).toBeInTheDocument();
-    expect(paginationInfo("21 total")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1–20 of 21")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
 
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledWith(
@@ -269,6 +265,6 @@ describe("AdminUsersPage", () => {
       );
     });
     expect(await screen.findByText("Dana")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeEnabled();
   });
 });

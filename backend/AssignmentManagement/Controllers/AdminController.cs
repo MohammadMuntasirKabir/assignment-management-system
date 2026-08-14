@@ -480,6 +480,48 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("teacher-assignments/{id:guid}")]
+    public async Task<ActionResult<TeacherAssignmentDto>> UpdateTeacherAssignment(
+        Guid id, [FromBody] AssignTeacherDto dto)
+    {
+        var entity = await _context.TeacherClassSubjects
+            .Include(tcs => tcs.Teacher)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Class)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Subject)
+            .FirstOrDefaultAsync(tcs => tcs.Id == id);
+        if (entity == null)
+            return NotFound(ApiErrors.NotFound("Teacher assignment not found"));
+
+        var teacher = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.TeacherId && u.Role == UserRole.Teacher);
+        if (teacher == null)
+            return NotFound(ApiErrors.NotFound("Teacher not found"));
+
+        var classSubject = await _context.ClassSubjects.FindAsync(dto.ClassSubjectId);
+        if (classSubject == null)
+            return NotFound(ApiErrors.NotFound("Class-subject not found"));
+
+        var existing = await _context.TeacherClassSubjects
+            .AnyAsync(tcs => tcs.Id != id && tcs.TeacherId == dto.TeacherId && tcs.ClassSubjectId == dto.ClassSubjectId);
+        if (existing)
+            return Conflict(ApiErrors.Conflict("Teacher is already assigned to this class-subject"));
+
+        entity.TeacherId = dto.TeacherId;
+        entity.ClassSubjectId = dto.ClassSubjectId;
+        await _context.SaveChangesAsync();
+
+        var result = await _context.TeacherClassSubjects
+            .Include(tcs => tcs.Teacher)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Class)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Subject)
+            .FirstAsync(tcs => tcs.Id == id);
+
+        return Ok(DtoMapper.ToTeacherAssignment(result));
+    }
+
     // Enroll student in class
     [HttpPost("enroll-student")]
     public async Task<IActionResult> EnrollStudent([FromBody] EnrollStudentDto dto)
@@ -539,6 +581,42 @@ public class AdminController : ControllerBase
         _context.ClassStudents.Remove(entity);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpPut("enrollments/{id:guid}")]
+    public async Task<ActionResult<StudentEnrollmentDto>> UpdateEnrollment(
+        Guid id, [FromBody] EnrollStudentDto dto)
+    {
+        var entity = await _context.ClassStudents
+            .Include(cs => cs.Student)
+            .Include(cs => cs.Class)
+            .FirstOrDefaultAsync(cs => cs.Id == id);
+        if (entity == null)
+            return NotFound(ApiErrors.NotFound("Enrollment not found"));
+
+        var student = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.StudentId && u.Role == UserRole.Student);
+        if (student == null)
+            return NotFound(ApiErrors.NotFound("Student not found"));
+
+        var classEntity = await _context.Classes.FindAsync(dto.ClassId);
+        if (classEntity == null)
+            return NotFound(ApiErrors.NotFound("Class not found"));
+
+        var existing = await _context.ClassStudents
+            .AnyAsync(cs => cs.Id != id && cs.StudentId == dto.StudentId && cs.ClassId == dto.ClassId);
+        if (existing)
+            return Conflict(ApiErrors.Conflict("Student is already enrolled in this class"));
+
+        entity.StudentId = dto.StudentId;
+        entity.ClassId = dto.ClassId;
+        await _context.SaveChangesAsync();
+
+        var result = await _context.ClassStudents
+            .Include(cs => cs.Student)
+            .Include(cs => cs.Class)
+            .FirstAsync(cs => cs.Id == id);
+
+        return Ok(DtoMapper.ToStudentEnrollment(result));
     }
 
     // View all assignments (admin)

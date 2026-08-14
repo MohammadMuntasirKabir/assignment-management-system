@@ -273,6 +273,55 @@ body {
   font-size: 0.74rem;
 }
 
+/* Startech-style pagination — PREV | 1 2 3 … N | NEXT */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination li {
+  display: inline-block;
+}
+
+.pagination-btn {
+  min-width: 36px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 34px;
+  text-align: center;
+  border: none;
+  border-radius: 4px;
+  background-color: #f1f3f5;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: var(--blue);
+  color: #fff;
+}
+
+.pagination-btn:disabled {
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+.pagination li.active .pagination-btn {
+  background-color: var(--blue);
+  color: #fff;
+}
+
+.pagination-ellipsis {
+  cursor: default;
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;

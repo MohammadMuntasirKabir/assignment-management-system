@@ -8,8 +8,11 @@ import api from "@/lib/api";
 import { Assignment, Submission } from "@/lib/types";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/Pagination";
 
 type AssignmentFilter = "due" | "submitted" | "overdue";
+
+const PAGE_SIZE = 12;
 
 const FILTERS: { value: AssignmentFilter; label: string }[] = [
   { value: "due", label: "Due" },
@@ -28,6 +31,7 @@ export default function StudentAssignmentsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [filter, setFilter] = useState<AssignmentFilter>("due");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,6 +66,10 @@ export default function StudentAssignmentsPage() {
 
   const visibleAssignments = assignments.filter(matchesFilter);
 
+  const totalPages = Math.max(1, Math.ceil(visibleAssignments.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedAssignments = visibleAssignments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const statusFor = (a: Assignment) => {
     if (submittedIds.has(a.id)) {
       return "Submitted";
@@ -92,7 +100,10 @@ export default function StudentAssignmentsPage() {
               <button
                 key={f.value}
                 type="button"
-                onClick={() => setFilter(f.value)}
+                onClick={() => {
+                  setFilter(f.value);
+                  setPage(1);
+                }}
                 className={`btn btn-sm ${filter === f.value ? "btn-primary" : "btn-secondary"}`}
               >
                 {f.label}
@@ -105,8 +116,9 @@ export default function StudentAssignmentsPage() {
           ) : visibleAssignments.length === 0 ? (
             <EmptyState>{EMPTY_NOTES[filter]}</EmptyState>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {visibleAssignments.map((a) => (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {pagedAssignments.map((a) => (
                 <div key={a.id} className="sheet p-5 flex flex-col gap-4">
                   <div className="flex justify-between items-start gap-3">
                     <h2 className="font-semibold text-lg leading-snug">{a.title}</h2>
@@ -128,7 +140,14 @@ export default function StudentAssignmentsPage() {
                   </Link>
                 </div>
               ))}
-            </div>
+              </div>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={visibleAssignments.length}
+                onPageChange={setPage}
+              />
+            </>
           )}
         </div>
       </DashboardLayout>

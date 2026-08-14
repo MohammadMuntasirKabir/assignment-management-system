@@ -8,10 +8,14 @@ import api from "@/lib/api";
 import { Submission } from "@/lib/types";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/Pagination";
+
+const PAGE_SIZE = 10;
 
 export default function StudentSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -30,6 +34,10 @@ export default function StudentSubmissionsPage() {
   }, []);
 
   const gradedSubmissions = submissions.filter((s) => s.status !== "Draft");
+
+  const totalPages = Math.max(1, Math.ceil(gradedSubmissions.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedSubmissions = gradedSubmissions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <ProtectedRoute allowedRoles={["Student"]}>
@@ -57,7 +65,7 @@ export default function StudentSubmissionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {gradedSubmissions.map((s) => (
+                  {pagedSubmissions.map((s) => (
                     <tr key={s.id}>
                       <td className="font-medium">{s.assignmentTitle}</td>
                       <td className="tnum">{s.marks !== null ? `${s.marks}` : "Not graded"}</td>
@@ -77,6 +85,12 @@ export default function StudentSubmissionsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={gradedSubmissions.length}
+                onPageChange={setPage}
+              />
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
@@ -8,20 +8,26 @@ import { StudentEnrollmentDto, Class, User } from "@/lib/types";
 import { roleNumberToRole } from "@/lib/auth";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
-import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import Pagination from "@/components/Pagination";
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+const PAGE_SIZE = 10;
 
 export default function AdminEnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<StudentEnrollmentDto[]>([]);
   const [students, setStudents] = useState<User[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingEnrollment, setEditingEnrollment] = useState<StudentEnrollmentDto | null>(null);
   const [formData, setFormData] = useState({ studentId: "", classId: "" });
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const hasLoadedRef = useRef(false);
 
   const fetchAll = async () => {
-    setLoading(true);
+    setLoading(!hasLoadedRef.current);
     try {
       const [enrRes, usersRes, cRes] = await Promise.all([
         api.get<StudentEnrollmentDto[]>("/api/admin/enrollments"),
@@ -30,6 +36,7 @@ export default function AdminEnrollmentsPage() {
         }),
         api.get<Class[]>("/api/admin/classes"),
       ]);
+      hasLoadedRef.current = true;
       setEnrollments(enrRes.data || []);
       setStudents(
         (usersRes.data?.items || [])
@@ -47,8 +54,20 @@ export default function AdminEnrollmentsPage() {
     fetchAll();
   }, []);
 
+  const totalPages = Math.max(1, Math.ceil(enrollments.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedEnrollments = enrollments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const openCreateModal = () => {
+    setEditingEnrollment(null);
     setFormData({ studentId: "", classId: "" });
+    setModalError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (enrollment: StudentEnrollmentDto) => {
+    setEditingEnrollment(enrollment);
+    setFormData({ studentId: enrollment.studentId, classId: enrollment.classId });
     setModalError("");
     setShowModal(true);
   };
@@ -61,14 +80,22 @@ export default function AdminEnrollmentsPage() {
     setSaving(true);
     setModalError("");
     try {
-      await api.post("/api/admin/enroll-student", {
-        studentId: formData.studentId,
-        classId: formData.classId,
-      });
+      if (editingEnrollment) {
+        await api.put(`/api/admin/enrollments/${editingEnrollment.id}`, {
+          studentId: formData.studentId,
+          classId: formData.classId,
+        });
+      } else {
+        await api.post("/api/admin/enroll-student", {
+          studentId: formData.studentId,
+          classId: formData.classId,
+        });
+      }
       setShowModal(false);
+      setPage(1);
       fetchAll();
     } catch (err) {
-      setModalError(getErrorMessage(err, "Failed to enroll student"));
+      setModalError(getErrorMessage(err, "Failed to save enrollment"));
     } finally {
       setSaving(false);
     }
@@ -78,6 +105,7 @@ export default function AdminEnrollmentsPage() {
     if (!window.confirm("Remove this enrollment?")) return;
     try {
       await api.delete(`/api/admin/enrollments/${id}`);
+      setPage(1);
       fetchAll();
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -111,11 +139,19 @@ export default function AdminEnrollmentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {enrollments.map((e) => (
+                  {pagedEnrollments.map((e) => (
                     <tr key={e.id}>
                       <td className="font-medium">{e.studentName}</td>
                       <td>{e.className}</td>
                       <td className="whitespace-nowrap">
+                        <button
+                          className="icon-btn"
+                          onClick={() => openEditModal(e)}
+                          title="Edit enrollment"
+                          aria-label={`Edit ${e.studentName} in ${e.className}`}
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                        </button>
                         <button
                           className="icon-btn icon-btn-danger"
                           onClick={() => handleDelete(e.id)}
@@ -128,6 +164,12 @@ export default function AdminEnrollmentsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={enrollments.length}
+                onPageChange={setPage}
+              />
             </div>
           )}
 
@@ -136,12 +178,12 @@ export default function AdminEnrollmentsPage() {
               className="modal-overlay"
               role="dialog"
               aria-modal="true"
-              aria-label="Enroll student"
+              aria-label={editingEnrollment ? "Edit enrollment" : "Enroll student"}
               onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
             >
               <div className="modal-sheet">
                 <div className="modal-head">
-                  <h2>Enroll Student in Class</h2>
+                  <h2>{editingEnrollment ? "Edit Enrollment" : "Enroll Student in Class"}</h2>
                   <button
                     className="icon-btn"
                     onClick={() => setShowModal(false)}
@@ -193,7 +235,7 @@ export default function AdminEnrollmentsPage() {
                     Cancel
                   </button>
                   <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
-                    {saving ? "Enrolling…" : "Enroll"}
+                    {saving ? "Saving…" : editingEnrollment ? "Save" : "Enroll"}
                   </button>
                 </div>
               </div>

@@ -10,13 +10,8 @@ public static class DbSeeder
         if (await context.Users.AnyAsync()) return;
 
         var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
-        var teacher1PasswordHash = BCrypt.Net.BCrypt.HashPassword("teacher123");
-        var teacher2PasswordHash = BCrypt.Net.BCrypt.HashPassword("teacher123");
-        var student1PasswordHash = BCrypt.Net.BCrypt.HashPassword("student123");
-        var student2PasswordHash = BCrypt.Net.BCrypt.HashPassword("student123");
-        var student3PasswordHash = BCrypt.Net.BCrypt.HashPassword("student123");
-        var student4PasswordHash = BCrypt.Net.BCrypt.HashPassword("student123");
-        var student5PasswordHash = BCrypt.Net.BCrypt.HashPassword("student123");
+        var teacherPasswordHash = BCrypt.Net.BCrypt.HashPassword("teacher123");
+        var studentPasswordHash = BCrypt.Net.BCrypt.HashPassword("student123");
 
         var admin = new User
         {
@@ -28,323 +23,228 @@ public static class DbSeeder
             CreatedAt = DateTime.UtcNow
         };
 
-        var teacher1 = new User
+        var teacherNames = new[]
         {
-            Id = Guid.NewGuid(),
-            Name = "John Smith",
-            Email = "teacher1@example.com",
-            PasswordHash = teacher1PasswordHash,
-            Role = UserRole.Teacher,
-            CreatedAt = DateTime.UtcNow
+            "John Smith", "Jane Doe", "Michael Chen", "Sarah Lee",
+            "David Kim", "Emma Watson", "Robert Brown", "Linda Park"
         };
 
-        var teacher2 = new User
+        var teachers = teacherNames
+            .Select((name, i) => new User
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Email = $"teacher{i + 1}@example.com",
+                PasswordHash = teacherPasswordHash,
+                Role = UserRole.Teacher,
+                CreatedAt = DateTime.UtcNow
+            })
+            .ToArray();
+
+        var studentNames = new[]
         {
-            Id = Guid.NewGuid(),
-            Name = "Jane Doe",
-            Email = "teacher2@example.com",
-            PasswordHash = teacher2PasswordHash,
-            Role = UserRole.Teacher,
-            CreatedAt = DateTime.UtcNow
+            "Alice Johnson", "Bob Williams", "Charlie Brown", "Diana Prince", "Ethan Hunt",
+            "Fiona Gallagher", "George Miller", "Hannah Baker", "Ivan Petrov", "Julia Roberts",
+            "Kevin Hart", "Laura Croft", "Michael Scott", "Nina Dobrev", "Oscar Wilde",
+            "Paula Patton", "Quincy Adams", "Rachel Green", "Sam Wilson", "Tina Fey",
+            "Uma Thurman", "Victor Hugo", "Wendy Davis", "Xavier Stone", "Yara Shahidi",
+            "Zack Morris", "Aaron Lewis", "Bella Swan", "Colin Farrell", "Dana Scully",
+            "Eric Cartman", "Fatima Zahra", "Goku Son", "Harry Potter", "Iris West",
+            "Jack Sparrow"
         };
 
-        var students = new[]
+        var students = studentNames
+            .Select((name, i) => new User
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Email = $"student{i + 1}@example.com",
+                PasswordHash = studentPasswordHash,
+                Role = UserRole.Student,
+                CreatedAt = DateTime.UtcNow
+            })
+            .ToArray();
+
+        var classDefinitions = new[]
         {
-            new User
+            ("Class 6-A", "Grade 6, Section A"),
+            ("Class 6-B", "Grade 6, Section B"),
+            ("Class 7-A", "Grade 7, Section A"),
+            ("Class 7-B", "Grade 7, Section B"),
+            ("Class 8-A", "Grade 8, Section A"),
+            ("Class 9-A", "Grade 9, Section A")
+        };
+
+        var classes = classDefinitions
+            .Select(c => new Class
             {
                 Id = Guid.NewGuid(),
-                Name = "Alice Johnson",
-                Email = "student1@example.com",
-                PasswordHash = student1PasswordHash,
-                Role = UserRole.Student,
+                Name = c.Item1,
+                Description = c.Item2,
                 CreatedAt = DateTime.UtcNow
-            },
-            new User
+            })
+            .ToArray();
+
+        var subjectDefinitions = new[]
+        {
+            ("Bangla", "Bangla (Literature, Grammar, Composition)"),
+            ("English", "English (Literature, Grammar, Composition)"),
+            ("Mathematics", "Mathematics (Algebra, Geometry, Calculus)"),
+            ("Science", "Science (Biology, Chemistry, Environment)"),
+            ("Social Science", "Social Science (History, Geography, Civics)"),
+            ("ICT", "ICT (Computer Fundamentals, Programming, Internet)"),
+            ("Physics", "Physics (Mechanics, Thermodynamics, Waves)"),
+            ("Chemistry", "Chemistry (Atoms, Bonding, Reactions)")
+        };
+
+        var subjects = subjectDefinitions
+            .Select(s => new Subject
             {
                 Id = Guid.NewGuid(),
-                Name = "Bob Williams",
-                Email = "student2@example.com",
-                PasswordHash = student2PasswordHash,
-                Role = UserRole.Student,
+                Name = s.Item1,
+                Description = s.Item2,
                 CreatedAt = DateTime.UtcNow
-            },
-            new User
+            })
+            .ToArray();
+
+        var classSubjects = new List<ClassSubject>();
+        foreach (var cls in classes)
+        {
+            foreach (var subject in subjects)
             {
-                Id = Guid.NewGuid(),
-                Name = "Charlie Brown",
-                Email = "student3@example.com",
-                PasswordHash = student3PasswordHash,
-                Role = UserRole.Student,
-                CreatedAt = DateTime.UtcNow
-            },
-            new User
-            {
-                Id = Guid.NewGuid(),
-                Name = "Diana Prince",
-                Email = "student4@example.com",
-                PasswordHash = student4PasswordHash,
-                Role = UserRole.Student,
-                CreatedAt = DateTime.UtcNow
-            },
-            new User
-            {
-                Id = Guid.NewGuid(),
-                Name = "Ethan Hunt",
-                Email = "student5@example.com",
-                PasswordHash = student5PasswordHash,
-                Role = UserRole.Student,
-                CreatedAt = DateTime.UtcNow
+                classSubjects.Add(new ClassSubject
+                {
+                    Id = Guid.NewGuid(),
+                    ClassId = cls.Id,
+                    SubjectId = subject.Id,
+                    CreatedAt = DateTime.UtcNow
+                });
             }
-        };
+        }
 
-        var mathClass = new Class
+        var teacherAssignments = new List<TeacherClassSubject>();
+        for (int t = 0; t < teachers.Length; t++)
         {
-            Id = Guid.NewGuid(),
-            Name = "Class 10-A",
-            Description = "Grade 10, Section A",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var scienceClass = new Class
-        {
-            Id = Guid.NewGuid(),
-            Name = "Class 10-B",
-            Description = "Grade 10, Section B",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var englishClass = new Class
-        {
-            Id = Guid.NewGuid(),
-            Name = "Class 9-A",
-            Description = "Grade 9, Section A",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var mathSubject = new Subject
-        {
-            Id = Guid.NewGuid(),
-            Name = "Mathematics",
-            Description = "Mathematics (Algebra, Geometry, Calculus)",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var physicsSubject = new Subject
-        {
-            Id = Guid.NewGuid(),
-            Name = "Physics",
-            Description = "Physics (Mechanics, Thermodynamics, Waves)",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var englishSubject = new Subject
-        {
-            Id = Guid.NewGuid(),
-            Name = "English",
-            Description = "English (Literature, Grammar, Composition)",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var mathScienceClassSubject = new ClassSubject
-        {
-            Id = Guid.NewGuid(),
-            ClassId = mathClass.Id,
-            SubjectId = mathSubject.Id,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var scienceClassSubject = new ClassSubject
-        {
-            Id = Guid.NewGuid(),
-            ClassId = scienceClass.Id,
-            SubjectId = physicsSubject.Id,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var mathClassSubjectSubject = new ClassSubject
-        {
-            Id = Guid.NewGuid(),
-            ClassId = mathClass.Id,
-            SubjectId = physicsSubject.Id,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var englishClassSubject = new ClassSubject
-        {
-            Id = Guid.NewGuid(),
-            ClassId = englishClass.Id,
-            SubjectId = englishSubject.Id,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var teacherAssignments = new[]
-        {
-            new TeacherClassSubject
+            for (int i = 0; i < 6; i++)
             {
-                Id = Guid.NewGuid(),
-                TeacherId = teacher1.Id,
-                ClassSubjectId = mathScienceClassSubject.Id,
-                CreatedAt = DateTime.UtcNow
-            },
-            new TeacherClassSubject
-            {
-                Id = Guid.NewGuid(),
-                TeacherId = teacher1.Id,
-                ClassSubjectId = mathClassSubjectSubject.Id,
-                CreatedAt = DateTime.UtcNow
-            },
-            new TeacherClassSubject
-            {
-                Id = Guid.NewGuid(),
-                TeacherId = teacher2.Id,
-                ClassSubjectId = scienceClassSubject.Id,
-                CreatedAt = DateTime.UtcNow
-            },
-            new TeacherClassSubject
-            {
-                Id = Guid.NewGuid(),
-                TeacherId = teacher2.Id,
-                ClassSubjectId = englishClassSubject.Id,
-                CreatedAt = DateTime.UtcNow
+                var index = t * 6 + i;
+                teacherAssignments.Add(new TeacherClassSubject
+                {
+                    Id = Guid.NewGuid(),
+                    TeacherId = teachers[t].Id,
+                    ClassSubjectId = classSubjects[index].Id,
+                    CreatedAt = DateTime.UtcNow
+                });
             }
-        };
+        }
 
-        // Enroll students in classes (students can enroll in multiple classes)
         var classStudents = new List<ClassStudent>();
-
-        // All 5 students in mathClass (Class 10-A)
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < students.Length; i++)
         {
-            classStudents.Add(new ClassStudent
+            var assignedClasses = new HashSet<Guid>();
+            int[] classOffsets = { i % classes.Length, (i / classes.Length) % classes.Length, (i + 5) % classes.Length };
+            foreach (var offset in classOffsets)
             {
-                Id = Guid.NewGuid(),
-                ClassId = mathClass.Id,
-                StudentId = students[i].Id,
-                CreatedAt = DateTime.UtcNow
-            });
-        }
-
-        // Students 0,1,2 in scienceClass (Class 10-B)
-        for (int i = 0; i < 3; i++)
-        {
-            classStudents.Add(new ClassStudent
-            {
-                Id = Guid.NewGuid(),
-                ClassId = scienceClass.Id,
-                StudentId = students[i].Id,
-                CreatedAt = DateTime.UtcNow
-            });
-        }
-
-        // Students 3,4 in englishClass (Class 9-A)
-        for (int i = 3; i < 5; i++)
-        {
-            classStudents.Add(new ClassStudent
-            {
-                Id = Guid.NewGuid(),
-                ClassId = englishClass.Id,
-                StudentId = students[i].Id,
-                CreatedAt = DateTime.UtcNow
-            });
-        }
-
-        var futureDate = DateTime.UtcNow.AddDays(7);
-        var pastDate = DateTime.UtcNow.AddDays(-2);
-
-        var assignments = new[]
-        {
-            new Assignment
-            {
-                Id = Guid.NewGuid(),
-                Title = "Algebra Problem Set 1",
-                Description = "Solve the following algebra problems: linear equations, quadratic equations, and systems of equations. Show all your work.",
-                ClassSubjectId = mathScienceClassSubject.Id,
-                TeacherId = teacher1.Id,
-                Deadline = futureDate.AddHours(23),
-                MaxMarks = 100,
-                Status = AssignmentStatus.Published,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            },
-            new Assignment
-            {
-                Id = Guid.NewGuid(),
-                Title = "Physics Lab Report",
-                Description = "Write a lab report on the optics experiment conducted in class. Include hypothesis, method, results, and conclusion.",
-                ClassSubjectId = scienceClassSubject.Id,
-                TeacherId = teacher2.Id,
-                Deadline = futureDate.AddDays(3).AddHours(14),
-                MaxMarks = 50,
-                Status = AssignmentStatus.Published,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            },
-            new Assignment
-            {
-                Id = Guid.NewGuid(),
-                Title = "English Essay Draft",
-                Description = "Write a 500-word essay on 'The Importance of Education'. This is a draft submission.",
-                ClassSubjectId = englishClassSubject.Id,
-                TeacherId = teacher2.Id,
-                Deadline = pastDate,
-                MaxMarks = 30,
-                Status = AssignmentStatus.Published,
-                CreatedAt = DateTime.UtcNow.AddDays(-5),
-                UpdatedAt = DateTime.UtcNow.AddDays(-5)
+                if (assignedClasses.Add(classes[offset].Id))
+                {
+                    classStudents.Add(new ClassStudent
+                    {
+                        Id = Guid.NewGuid(),
+                        ClassId = classes[offset].Id,
+                        StudentId = students[i].Id,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
             }
-        };
+        }
+
+        var now = DateTime.UtcNow;
+        var futureDate = now.AddDays(7);
+        var pastDate = now.AddDays(-3);
+
+        var assignments = new List<Assignment>();
+        var counter = 0;
+        foreach (var ta in teacherAssignments)
+        {
+            int assignmentCount = counter % 3 == 0 ? 2 : 1;
+            var classSubject = classSubjects.First(cs => cs.Id == ta.ClassSubjectId);
+            var className = classes.First(c => c.Id == classSubject.ClassId).Name;
+            var subjectName = subjects.First(s => s.Id == classSubject.SubjectId).Name;
+
+            for (int k = 0; k < assignmentCount; k++)
+            {
+                counter++;
+                bool isPast = counter % 3 == 0;
+                var deadline = isPast
+                    ? pastDate.AddDays(-counter % 5)
+                    : futureDate.AddDays((counter % 7) + 1).AddHours(counter % 12);
+
+                assignments.Add(new Assignment
+                {
+                    Id = Guid.NewGuid(),
+                    Title = $"Assignment {counter} – {subjectName} ({className})",
+                    Description = $"Complete and submit the {subjectName} task for {className}. Follow the guidelines discussed in class and show all your work.",
+                    ClassSubjectId = ta.ClassSubjectId,
+                    TeacherId = ta.TeacherId,
+                    Deadline = deadline,
+                    MaxMarks = 20 + (counter * 7) % 80,
+                    Status = counter % 10 == 0 ? AssignmentStatus.Draft : AssignmentStatus.Published,
+                    CreatedAt = now.AddDays(-(counter % 10)),
+                    UpdatedAt = now.AddDays(-(counter % 10))
+                });
+            }
+        }
+
+        var studentsByClass = classStudents
+            .GroupBy(cs => cs.ClassId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.StudentId).ToArray());
 
         var submissions = new List<Submission>();
-        var studentInMathClass = students.Take(5).ToArray();
-        var studentInScienceClass = students.Take(3).ToArray();
-        var studentInEnglishClass = students.Skip(3).Take(2).ToArray();
-
-        foreach (var assignment in assignments)
+        var submissionCounter = 0;
+        foreach (var assignment in assignments.Where(a => a.Status == AssignmentStatus.Published))
         {
-            if (assignment.Title == "Algebra Problem Set 1")
+            var classSubject = classSubjects.First(cs => cs.Id == assignment.ClassSubjectId);
+            if (!studentsByClass.TryGetValue(classSubject.ClassId, out var enrolledStudents)) continue;
+
+            for (int s = 0; s < enrolledStudents.Length; s++)
             {
-                foreach (var student in studentInMathClass.Take(2))
+                if ((s + submissionCounter) % 2 != 0) continue;
+
+                submissionCounter++;
+                bool isLate = submissionCounter % 5 == 0;
+                bool isReviewed = submissionCounter % 3 == 0;
+                var status = isReviewed
+                    ? SubmissionStatus.Reviewed
+                    : isLate
+                        ? SubmissionStatus.Late
+                        : SubmissionStatus.Submitted;
+
+                var submittedAt = assignment.Deadline > now
+                    ? now.AddHours(-2)
+                    : assignment.Deadline.AddMinutes(30);
+
+                submissions.Add(new Submission
                 {
-                    submissions.Add(new Submission
-                    {
-                        Id = Guid.NewGuid(),
-                        AssignmentId = assignment.Id,
-                        StudentId = student.Id,
-                        Content = "Student submission content for Algebra Problem Set 1.",
-                        Status = SubmissionStatus.Submitted,
-                        Marks = 85,
-                        Feedback = "Good work on the linear equations. Review quadratic formula.",
-                        SubmittedAt = DateTime.UtcNow.AddDays(6),
-                        CreatedAt = DateTime.UtcNow.AddDays(6),
-                        UpdatedAt = DateTime.UtcNow.AddDays(6)
-                    });
-                }
-            }
-            else if (assignment.Title == "English Essay Draft")
-            {
-                foreach (var student in studentInEnglishClass.Take(1))
-                {
-                    submissions.Add(new Submission
-                    {
-                        Id = Guid.NewGuid(),
-                        AssignmentId = assignment.Id,
-                        StudentId = student.Id,
-                        Content = "Student submission content for English Essay Draft.",
-                        Status = SubmissionStatus.Late,
-                        SubmittedAt = DateTime.UtcNow.AddDays(-1),
-                        CreatedAt = DateTime.UtcNow.AddDays(-1),
-                        UpdatedAt = DateTime.UtcNow.AddDays(-1)
-                    });
-                }
+                    Id = Guid.NewGuid(),
+                    AssignmentId = assignment.Id,
+                    StudentId = enrolledStudents[s],
+                    Content = $"Student submission for {assignment.Title}. Includes the required work and notes.",
+                    Status = status,
+                    Marks = status == SubmissionStatus.Reviewed ? 60 + (submissionCounter * 3) % 40 : null,
+                    Feedback = status == SubmissionStatus.Reviewed ? "Good effort. Review the key concepts before the next task." : null,
+                    SubmittedAt = submittedAt,
+                    CreatedAt = submittedAt,
+                    UpdatedAt = submittedAt
+                });
             }
         }
 
-        context.Users.AddRange(admin, teacher1, teacher2);
+        context.Users.Add(admin);
+        context.Users.AddRange(teachers);
         context.Users.AddRange(students);
-        context.Classes.AddRange(mathClass, scienceClass, englishClass);
-        context.Subjects.AddRange(mathSubject, physicsSubject, englishSubject);
-        context.ClassSubjects.AddRange(
-            mathScienceClassSubject, scienceClassSubject, mathClassSubjectSubject, englishClassSubject);
+        context.Classes.AddRange(classes);
+        context.Subjects.AddRange(subjects);
+        context.ClassSubjects.AddRange(classSubjects);
         context.TeacherClassSubjects.AddRange(teacherAssignments);
         context.ClassStudents.AddRange(classStudents);
         context.Assignments.AddRange(assignments);

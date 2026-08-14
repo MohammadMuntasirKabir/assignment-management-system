@@ -8,7 +8,10 @@ import { Assignment, CreateAssignmentDto, ClassSubjectDto } from "@/lib/types";
 import { assignmentStatusLabel, assignmentStampClass } from "@/lib/status";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/Pagination";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+const PAGE_SIZE = 10;
 
 export default function TeacherAssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -24,6 +27,7 @@ export default function TeacherAssignmentsPage() {
     status: "Draft" as "Draft" | "Published",
   });
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const fetchAssignments = async () => {
     setLoading(true);
@@ -50,6 +54,10 @@ export default function TeacherAssignmentsPage() {
     fetchAssignments();
     fetchClassSubjects();
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(assignments.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedAssignments = assignments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const openCreateModal = async () => {
     setEditingAssignment(null);
@@ -92,6 +100,7 @@ export default function TeacherAssignmentsPage() {
         await api.post("/api/teacher/assignments", payload);
       }
       setShowModal(false);
+      setPage(1);
       fetchAssignments();
     } catch (err) {
       console.error("Failed:", err);
@@ -103,6 +112,7 @@ export default function TeacherAssignmentsPage() {
     if (!window.confirm("Delete this assignment?")) return;
     try {
       await api.delete(`/api/teacher/assignments/${id}`);
+      setPage(1);
       fetchAssignments();
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -140,7 +150,7 @@ export default function TeacherAssignmentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assignments.map((a) => (
+                  {pagedAssignments.map((a) => (
                     <tr key={a.id}>
                       <td className="font-medium">{a.title}</td>
                       <td>{a.className}</td>
@@ -170,6 +180,12 @@ export default function TeacherAssignmentsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={assignments.length}
+                onPageChange={setPage}
+              />
             </div>
           )}
 

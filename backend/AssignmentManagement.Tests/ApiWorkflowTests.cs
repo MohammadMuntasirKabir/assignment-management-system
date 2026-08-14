@@ -1006,6 +1006,59 @@ public class ApiWorkflowTests : IDisposable
     }
 
     [Fact]
+    public async Task Admin_UpdateTeacherAssignment_Works()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var entity = await _context.TeacherClassSubjects.SingleAsync(tcs =>
+            tcs.TeacherId == data.Teacher1.Id && tcs.ClassSubjectId == data.ClassSubject1.Id);
+
+        var result = await controller.UpdateTeacherAssignment(entity.Id, new AssignTeacherDto
+        {
+            TeacherId = data.Teacher2.Id,
+            ClassSubjectId = data.ClassSubject1.Id
+        });
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var dto = (ok.Value as TeacherAssignmentDto)!;
+        dto.TeacherId.Should().Be(data.Teacher2.Id);
+        dto.TeacherName.Should().Be(data.Teacher2.Name);
+        dto.ClassName.Should().Be(data.ClassSubject1.Class.Name);
+    }
+
+    [Fact]
+    public async Task Admin_UpdateTeacherAssignment_Duplicate_ReturnsConflict()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var entity = await _context.TeacherClassSubjects.SingleAsync(tcs =>
+            tcs.TeacherId == data.Teacher1.Id && tcs.ClassSubjectId == data.ClassSubject1.Id);
+
+        var result = await controller.UpdateTeacherAssignment(entity.Id, new AssignTeacherDto
+        {
+            TeacherId = data.Teacher2.Id,
+            ClassSubjectId = data.ClassSubject2.Id
+        });
+
+        result.Result.Should().BeOfType<ConflictObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_UpdateTeacherAssignment_NotFound_Returns404()
+    {
+        await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.UpdateTeacherAssignment(Guid.NewGuid(), new AssignTeacherDto
+        {
+            TeacherId = Guid.NewGuid(),
+            ClassSubjectId = Guid.NewGuid()
+        });
+
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
     public async Task Admin_GetEnrollments_ReturnsListWithNames()
     {
         var data = await SetupAsync();
@@ -1107,6 +1160,59 @@ public class ApiWorkflowTests : IDisposable
         var result = await controller.DeleteEnrollment(Guid.NewGuid());
 
         result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_UpdateEnrollment_Works()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var entity = await _context.ClassStudents.SingleAsync(cs =>
+            cs.StudentId == data.Student1.Id && cs.ClassId == data.Class1.Id);
+
+        var result = await controller.UpdateEnrollment(entity.Id, new EnrollStudentDto
+        {
+            StudentId = data.Student1.Id,
+            ClassId = data.ClassSubject2.ClassId
+        });
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var dto = (ok.Value as StudentEnrollmentDto)!;
+        dto.StudentId.Should().Be(data.Student1.Id);
+        dto.StudentName.Should().Be(data.Student1.Name);
+        dto.ClassId.Should().Be(data.ClassSubject2.ClassId);
+    }
+
+    [Fact]
+    public async Task Admin_UpdateEnrollment_Duplicate_ReturnsConflict()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var entity = await _context.ClassStudents.SingleAsync(cs =>
+            cs.StudentId == data.Student1.Id && cs.ClassId == data.Class1.Id);
+
+        var result = await controller.UpdateEnrollment(entity.Id, new EnrollStudentDto
+        {
+            StudentId = data.Student2.Id,
+            ClassId = data.ClassSubject2.ClassId
+        });
+
+        result.Result.Should().BeOfType<ConflictObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_UpdateEnrollment_NotFound_Returns404()
+    {
+        await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.UpdateEnrollment(Guid.NewGuid(), new EnrollStudentDto
+        {
+            StudentId = Guid.NewGuid(),
+            ClassId = Guid.NewGuid()
+        });
+
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     public void Dispose()

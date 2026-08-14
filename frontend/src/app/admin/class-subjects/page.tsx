@@ -7,7 +7,10 @@ import api, { getErrorMessage } from "@/lib/api";
 import { ClassSubjectDto, Class, Subject } from "@/lib/types";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/Pagination";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+const PAGE_SIZE = 10;
 
 export default function AdminClassSubjectsPage() {
   const [classSubjects, setClassSubjects] = useState<ClassSubjectDto[]>([]);
@@ -17,6 +20,7 @@ export default function AdminClassSubjectsPage() {
   const [editingLink, setEditingLink] = useState<ClassSubjectDto | null>(null);
   const [formData, setFormData] = useState({ classId: "", subjectId: "" });
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -38,6 +42,10 @@ export default function AdminClassSubjectsPage() {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(classSubjects.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedClassSubjects = classSubjects.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const openCreateModal = () => {
     setEditingLink(null);
@@ -64,6 +72,7 @@ export default function AdminClassSubjectsPage() {
       }
       setShowModal(false);
       setFormData({ classId: "", subjectId: "" });
+      setPage(1);
       fetchAll();
     } catch (err) {
       alert(getErrorMessage(err, "Failed to save class-subject link"));
@@ -74,6 +83,7 @@ export default function AdminClassSubjectsPage() {
     if (!window.confirm("Unlink this class-subject?")) return;
     try {
       await api.delete(`/api/admin/class-subjects/${id}`);
+      setPage(1);
       fetchAll();
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -107,7 +117,7 @@ export default function AdminClassSubjectsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {classSubjects.map((cs) => (
+                  {pagedClassSubjects.map((cs) => (
                     <tr key={cs.id}>
                       <td className="font-medium">{cs.className}</td>
                       <td>{cs.subjectName}</td>
@@ -131,6 +141,12 @@ export default function AdminClassSubjectsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={classSubjects.length}
+                onPageChange={setPage}
+              />
             </div>
           )}
 

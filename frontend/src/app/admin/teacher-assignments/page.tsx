@@ -8,17 +8,22 @@ import { TeacherAssignmentDto, ClassSubjectDto, User } from "@/lib/types";
 import { roleNumberToRole } from "@/lib/auth";
 import LoadingNote from "@/components/ui/LoadingNote";
 import EmptyState from "@/components/ui/EmptyState";
-import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import Pagination from "@/components/Pagination";
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+const PAGE_SIZE = 10;
 
 export default function AdminTeacherAssignmentsPage() {
   const [assignments, setAssignments] = useState<TeacherAssignmentDto[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
   const [classSubjects, setClassSubjects] = useState<ClassSubjectDto[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<TeacherAssignmentDto | null>(null);
   const [formData, setFormData] = useState({ teacherId: "", classSubjectId: "" });
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -47,8 +52,20 @@ export default function AdminTeacherAssignmentsPage() {
     fetchAll();
   }, []);
 
+  const totalPages = Math.max(1, Math.ceil(assignments.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedAssignments = assignments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const openCreateModal = () => {
+    setEditingAssignment(null);
     setFormData({ teacherId: "", classSubjectId: "" });
+    setModalError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (assignment: TeacherAssignmentDto) => {
+    setEditingAssignment(assignment);
+    setFormData({ teacherId: assignment.teacherId, classSubjectId: assignment.classSubjectId });
     setModalError("");
     setShowModal(true);
   };
@@ -61,14 +78,22 @@ export default function AdminTeacherAssignmentsPage() {
     setSaving(true);
     setModalError("");
     try {
-      await api.post("/api/admin/assign-teacher", {
-        teacherId: formData.teacherId,
-        classSubjectId: formData.classSubjectId,
-      });
+      if (editingAssignment) {
+        await api.put(`/api/admin/teacher-assignments/${editingAssignment.id}`, {
+          teacherId: formData.teacherId,
+          classSubjectId: formData.classSubjectId,
+        });
+      } else {
+        await api.post("/api/admin/assign-teacher", {
+          teacherId: formData.teacherId,
+          classSubjectId: formData.classSubjectId,
+        });
+      }
       setShowModal(false);
+      setPage(1);
       fetchAll();
     } catch (err) {
-      setModalError(getErrorMessage(err, "Failed to assign teacher"));
+      setModalError(getErrorMessage(err, "Failed to save assignment"));
     } finally {
       setSaving(false);
     }
@@ -78,6 +103,7 @@ export default function AdminTeacherAssignmentsPage() {
     if (!window.confirm("Remove this teacher assignment?")) return;
     try {
       await api.delete(`/api/admin/teacher-assignments/${id}`);
+      setPage(1);
       fetchAll();
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -112,12 +138,20 @@ export default function AdminTeacherAssignmentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assignments.map((a) => (
+                  {pagedAssignments.map((a) => (
                     <tr key={a.id}>
                       <td className="font-medium">{a.teacherName}</td>
                       <td>{a.className}</td>
                       <td>{a.subjectName}</td>
                       <td className="whitespace-nowrap">
+                        <button
+                          className="icon-btn"
+                          onClick={() => openEditModal(a)}
+                          title="Edit assignment"
+                          aria-label={`Edit ${a.teacherName} in ${a.className} – ${a.subjectName}`}
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                        </button>
                         <button
                           className="icon-btn icon-btn-danger"
                           onClick={() => handleDelete(a.id)}
@@ -130,6 +164,12 @@ export default function AdminTeacherAssignmentsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={assignments.length}
+                onPageChange={setPage}
+              />
             </div>
           )}
 
@@ -138,12 +178,16 @@ export default function AdminTeacherAssignmentsPage() {
               className="modal-overlay"
               role="dialog"
               aria-modal="true"
-              aria-label="Assign teacher"
+              aria-label={editingAssignment ? "Edit teacher assignment" : "Assign teacher"}
               onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
             >
               <div className="modal-sheet">
                 <div className="modal-head">
-                  <h2>Assign Teacher to Class–Subject</h2>
+                  <h2>
+                    {editingAssignment
+                      ? "Edit Teacher Assignment"
+                      : "Assign Teacher to Class–Subject"}
+                  </h2>
                   <button
                     className="icon-btn"
                     onClick={() => setShowModal(false)}
@@ -198,7 +242,7 @@ export default function AdminTeacherAssignmentsPage() {
                     Cancel
                   </button>
                   <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
-                    {saving ? "Assigning…" : "Assign"}
+                    {saving ? "Saving…" : editingAssignment ? "Save" : "Assign"}
                   </button>
                 </div>
               </div>

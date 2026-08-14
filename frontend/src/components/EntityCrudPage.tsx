@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import api, { getErrorMessage } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+const PAGE_SIZE = 10;
 
 interface NamedEntity {
   id: string;
@@ -35,6 +38,7 @@ export default function EntityCrudPage<T extends NamedEntity, D extends { name: 
   const [formData, setFormData] = useState<D>(createDto);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
   const itemCountRef = useRef(0);
 
   const fetchItems = useCallback(async () => {
@@ -60,6 +64,10 @@ export default function EntityCrudPage<T extends NamedEntity, D extends { name: 
     setShowModal(true);
   };
 
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedItems = items.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const openEditModal = (item: T) => {
     setEditingItem(item);
     setFormData(toDto(item));
@@ -74,6 +82,7 @@ export default function EntityCrudPage<T extends NamedEntity, D extends { name: 
         await api.post(apiPath, formData);
       }
       setShowModal(false);
+      setPage(1);
       fetchItems();
     } catch (err) {
       alert(getErrorMessage(err, "Failed to save"));
@@ -84,6 +93,7 @@ export default function EntityCrudPage<T extends NamedEntity, D extends { name: 
     if (!window.confirm(`Delete this ${entityName.toLowerCase()}?`)) return;
     try {
       await api.delete(`${apiPath}/${id}`);
+      setPage(1);
       fetchItems();
     } catch (err) {
       alert(getErrorMessage(err, "Failed to delete"));
@@ -120,7 +130,7 @@ export default function EntityCrudPage<T extends NamedEntity, D extends { name: 
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {pagedItems.map((item) => (
                 <tr key={item.id}>
                   <td className="font-medium">{item.name}</td>
                   <td>{item.description}</td>
@@ -144,6 +154,12 @@ export default function EntityCrudPage<T extends NamedEntity, D extends { name: 
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            total={items.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

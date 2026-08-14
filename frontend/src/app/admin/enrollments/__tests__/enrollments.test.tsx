@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@/test-utils/mocks";
-import { mockGet, mockPost, mockDelete } from "@/test-utils/mocks";
+import { mockGet, mockPost, mockPut, mockDelete } from "@/test-utils/mocks";
 import AdminEnrollmentsPage from "@/app/admin/enrollments/page";
 
 
@@ -29,7 +29,7 @@ jest.mock("@/lib/api", () => ({
   __esModule: true,
   default: {
     get: (...args: unknown[]) => mockGet(...args),
-    put: jest.fn(),
+    put: (...args: unknown[]) => mockPut(...args),
     post: (...args: unknown[]) => mockPost(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
   },
@@ -61,6 +61,7 @@ describe("AdminEnrollmentsPage", () => {
       return Promise.resolve({ data: classes });
     });
     mockPost.mockResolvedValue({ data: {} });
+    mockPut.mockResolvedValue({ data: {} });
     mockDelete.mockResolvedValue({});
   });
 
@@ -103,6 +104,25 @@ describe("AdminEnrollmentsPage", () => {
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith("/api/admin/enroll-student", {
+        studentId: "u2",
+        classId: "c2",
+      });
+    });
+  });
+
+  it("edits an enrollment", async () => {
+    render(<AdminEnrollmentsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Edit Bob in Class 6" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Bob in Class 6" }));
+    fireEvent.change(screen.getByLabelText("Class"), { target: { value: "c2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockPut).toHaveBeenCalledWith("/api/admin/enrollments/e1", {
         studentId: "u2",
         classId: "c2",
       });
