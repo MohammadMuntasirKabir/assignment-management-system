@@ -76,7 +76,6 @@ OnnorokomProjukti/
 ├── database/
 │   ├── migrations.sql           (EF Core migration SQL)
 │   └── seed_data.sql            (Raw SQL seed data)
-├── plan.md
 ├── .gitignore
 └── README.md
 ```

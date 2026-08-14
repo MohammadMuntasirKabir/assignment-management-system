@@ -48,3 +48,6 @@ Desktop.ini
 # Tool config
 .claude/
 .codex/
+
+# Local planning docs (not committed to remote)
+plan.md
