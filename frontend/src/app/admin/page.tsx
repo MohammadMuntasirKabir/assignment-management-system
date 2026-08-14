@@ -5,7 +5,7 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
-import { User, Class, Assignment, Submission } from "@/lib/types";
+import { Assignment, Class, PagedResult, Submission, User } from "@/lib/types";
 
 export default function AdminDashboard() {
   const [usersCount, setUsersCount] = useState<number | null>(null);
@@ -17,15 +17,19 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const [users, classes, assignments, submissions] = await Promise.all([
-          api.get<User[]>("/api/admin/users"),
+          api.get<PagedResult<User>>("/api/admin/users", { params: { page: 1, pageSize: 1 } }),
           api.get<Class[]>("/api/admin/classes"),
-          api.get<Assignment[]>("/api/admin/assignments"),
-          api.get<Submission[]>("/api/admin/submissions"),
+          api.get<PagedResult<Assignment>>("/api/admin/assignments", {
+            params: { page: 1, pageSize: 1 },
+          }),
+          api.get<PagedResult<Submission>>("/api/admin/submissions", {
+            params: { page: 1, pageSize: 1 },
+          }),
         ]);
-        setUsersCount((users.data || []).length);
+        setUsersCount(users.data?.total ?? 0);
         setClassesCount((classes.data || []).length);
-        setAssignmentsCount((assignments.data || []).length);
-        setSubmissionsCount((submissions.data || []).length);
+        setAssignmentsCount(assignments.data?.total ?? 0);
+        setSubmissionsCount(submissions.data?.total ?? 0);
       } catch (err) {
         console.error("Failed to fetch stats:", err);
       }

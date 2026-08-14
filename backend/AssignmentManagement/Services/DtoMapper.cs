@@ -46,4 +46,25 @@ public static class DtoMapper
         SubjectId = cs.SubjectId,
         SubjectName = cs.Subject?.Name ?? string.Empty
     };
+
+    public static TeacherAssignmentDto ToTeacherAssignment(TeacherClassSubject tcs) => new()
+    {
+        Id = tcs.Id,
+        TeacherId = tcs.TeacherId,
+        TeacherName = tcs.Teacher?.Name ?? string.Empty,
+        ClassSubjectId = tcs.ClassSubjectId,
+        ClassName = tcs.ClassSubject?.Class?.Name ?? string.Empty,
+        SubjectName = tcs.ClassSubject?.Subject?.Name ?? string.Empty,
+        CreatedAt = tcs.CreatedAt
+    };
+
+    public static StudentEnrollmentDto ToStudentEnrollment(ClassStudent cs) => new()
+    {
+        Id = cs.Id,
+        StudentId = cs.StudentId,
+        StudentName = cs.Student?.Name ?? string.Empty,
+        ClassId = cs.ClassId,
+        ClassName = cs.Class?.Name ?? string.Empty,
+        CreatedAt = cs.CreatedAt
+    };
 }

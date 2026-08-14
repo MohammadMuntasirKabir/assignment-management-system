@@ -26,10 +26,19 @@ public class AdminController : ControllerBase
 
     // Users
     [HttpGet("users")]
-    public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers()
+    public async Task<ActionResult<PagedResult<UserResponseDto>>> GetUsers(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var users = await _context.Users
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _context.Users.AsNoTracking();
+        var total = await query.CountAsync();
+
+        var users = await query
             .OrderBy(u => u.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(u => new UserResponseDto
             {
                 Id = u.Id,
@@ -39,7 +48,14 @@ public class AdminController : ControllerBase
                 CreatedAt = u.CreatedAt
             })
             .ToListAsync();
-        return Ok(users);
+
+        return Ok(new PagedResult<UserResponseDto>
+        {
+            Items = users,
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        });
     }
 
     [HttpPost("users")]
@@ -409,7 +425,45 @@ public class AdminController : ControllerBase
         };
         _context.TeacherClassSubjects.Add(teacherAssignment);
         await _context.SaveChangesAsync();
-        return Ok(new { message = "Teacher assigned successfully" });
+
+        var result = await _context.TeacherClassSubjects
+            .Include(tcs => tcs.Teacher)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Class)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Subject)
+            .FirstAsync(tcs => tcs.Id == teacherAssignment.Id);
+
+        return Ok(DtoMapper.ToTeacherAssignment(result));
+    }
+
+    // View all teacher-class-subject assignments (admin)
+    [HttpGet("teacher-assignments")]
+    public async Task<ActionResult<IEnumerable<TeacherAssignmentDto>>> GetTeacherAssignments()
+    {
+        var assignments = await _context.TeacherClassSubjects
+            .Include(tcs => tcs.Teacher)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Class)
+            .Include(tcs => tcs.ClassSubject)
+                .ThenInclude(cs => cs.Subject)
+            .OrderBy(tcs => tcs.Teacher!.Name)
+            .ThenBy(tcs => tcs.ClassSubject!.Class!.Name)
+            .ThenBy(tcs => tcs.ClassSubject!.Subject!.Name)
+            .ToListAsync();
+        return Ok(assignments.Select(DtoMapper.ToTeacherAssignment));
+    }
+
+    [HttpDelete("teacher-assignments/{id:guid}")]
+    public async Task<IActionResult> DeleteTeacherAssignment(Guid id)
+    {
+        var entity = await _context.TeacherClassSubjects.FindAsync(id);
+        if (entity == null)
+            return NotFound(new { message = "Teacher assignment not found" });
+
+        _context.TeacherClassSubjects.Remove(entity);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     // Enroll student in class
@@ -438,33 +492,100 @@ public class AdminController : ControllerBase
         };
         _context.ClassStudents.Add(classStudent);
         await _context.SaveChangesAsync();
-        return Ok(new { message = "Student enrolled successfully" });
+
+        var result = await _context.ClassStudents
+            .Include(cs => cs.Student)
+            .Include(cs => cs.Class)
+            .FirstAsync(cs => cs.Id == classStudent.Id);
+
+        return Ok(DtoMapper.ToStudentEnrollment(result));
+    }
+
+    // View all student enrollments (admin)
+    [HttpGet("enrollments")]
+    public async Task<ActionResult<IEnumerable<StudentEnrollmentDto>>> GetEnrollments()
+    {
+        var enrollments = await _context.ClassStudents
+            .Include(cs => cs.Student)
+            .Include(cs => cs.Class)
+            .OrderBy(cs => cs.Student!.Name)
+            .ThenBy(cs => cs.Class!.Name)
+            .ToListAsync();
+        return Ok(enrollments.Select(DtoMapper.ToStudentEnrollment));
+    }
+
+    [HttpDelete("enrollments/{id:guid}")]
+    public async Task<IActionResult> DeleteEnrollment(Guid id)
+    {
+        var entity = await _context.ClassStudents.FindAsync(id);
+        if (entity == null)
+            return NotFound(new { message = "Enrollment not found" });
+
+        _context.ClassStudents.Remove(entity);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     // View all assignments (admin)
     [HttpGet("assignments")]
-    public async Task<ActionResult<IEnumerable<AssignmentResponseDto>>> GetAllAssignments()
+    public async Task<ActionResult<PagedResult<AssignmentResponseDto>>> GetAllAssignments(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var assignments = await _context.Assignments
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _context.Assignments
             .Include(a => a.ClassSubject)
                 .ThenInclude(cs => cs.Class)
             .Include(a => a.ClassSubject)
                 .ThenInclude(cs => cs.Subject)
             .Include(a => a.Teacher)
+            .AsNoTracking();
+
+        var total = await query.CountAsync();
+
+        var assignments = await query
             .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
-        return Ok(assignments.Select(DtoMapper.ToAssignment));
+
+        return Ok(new PagedResult<AssignmentResponseDto>
+        {
+            Items = assignments.Select(DtoMapper.ToAssignment).ToList(),
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        });
     }
 
     // View all submissions (admin)
     [HttpGet("submissions")]
-    public async Task<ActionResult<IEnumerable<SubmissionResponseDto>>> GetAllSubmissions()
+    public async Task<ActionResult<PagedResult<SubmissionResponseDto>>> GetAllSubmissions(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var submissions = await _context.Submissions
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _context.Submissions
             .Include(s => s.Assignment)
             .Include(s => s.Student)
+            .AsNoTracking();
+
+        var total = await query.CountAsync();
+
+        var submissions = await query
             .OrderByDescending(s => s.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
-        return Ok(submissions.Select(DtoMapper.ToSubmission));
+
+        return Ok(new PagedResult<SubmissionResponseDto>
+        {
+            Items = submissions.Select(DtoMapper.ToSubmission).ToList(),
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        });
     }
 }

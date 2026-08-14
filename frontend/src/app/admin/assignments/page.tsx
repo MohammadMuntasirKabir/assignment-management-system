@@ -1,30 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
-import { Assignment } from "@/lib/types";
+import { Assignment, PagedResult } from "@/lib/types";
+import Pagination from "@/components/Pagination";
+
+const PAGE_SIZE = 20;
 
 export default function AdminAssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async (targetPage: number) => {
     setLoading(true);
     try {
-      const response = await api.get<Assignment[]>("/api/admin/assignments");
-      setAssignments(response.data || []);
+      const response = await api.get<PagedResult<Assignment>>("/api/admin/assignments", {
+        params: { page: targetPage, pageSize: PAGE_SIZE },
+      });
+      setAssignments(response.data?.items || []);
+      setTotal(response.data?.total ?? 0);
     } catch (err) {
       console.error("Failed to fetch:", err);
       setAssignments([]);
+      setTotal(0);
     }
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchAssignments();
-  }, []);
+    fetchAssignments(1);
+  }, [fetchAssignments]);
+
+  const handlePageChange = (next: number) => {
+    setPage(next);
+    fetchAssignments(next);
+  };
 
   const statusLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -45,7 +59,7 @@ export default function AdminAssignmentsPage() {
         <div>
           <div className="title-block">
             <h1>All Assignments</h1>
-            <span className="tb-note">{assignments.length} items</span>
+            <span className="tb-note">{total} items</span>
           </div>
 
           {loading ? (
@@ -85,6 +99,12 @@ export default function AdminAssignmentsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={total}
+                onPageChange={handlePageChange}
+              />
             </div>
           )}
         </div>

@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:18
+    container_name: assignment-mgmt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: assignment_mgmt
+      POSTGRES_USER: asm_user
+      POSTGRES_PASSWORD: asm_pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asm_user -d assignment_mgmt"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: assignment-mgmt-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=assignment_mgmt;Username=asm_user;Password=asm_pass
+      JwtSettings__SecretKey: THIS_SHOULD_BE_REPLACED_WITH_A_SECURE_KEY_IN_PRODUCTION_USE_AT_LEAST_32_CHARS
+      JwtSettings__ExpiryMinutes: "1440"
+      JwtSettings__Issuer: AssignmentManagementAPI
+      JwtSettings__Audience: AssignmentManagementClient
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000
+    container_name: assignment-mgmt-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

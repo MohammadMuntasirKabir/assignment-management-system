@@ -48,6 +48,8 @@ export default function DashboardLayout({ children, allowedRoles }: DashboardLay
       { label: "Subjects", href: "/admin/subjects", icon: BookOpenIcon },
       { label: "Users", href: "/admin/users", icon: UserGroupIcon },
       { label: "Class-Subjects", href: "/admin/class-subjects", icon: LinkIcon },
+      { label: "Teacher Assignments", href: "/admin/teacher-assignments", icon: ClipboardDocumentListIcon },
+      { label: "Enrollments", href: "/admin/enrollments", icon: UserGroupIcon },
       { label: "Assignments", href: "/admin/assignments", icon: ClipboardDocumentListIcon },
       { label: "Submissions", href: "/admin/submissions", icon: ClipboardDocumentListIcon }
     );

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/components/AuthProvider";
 import api, { getErrorMessage } from "@/lib/api";
-import { AuthResponse, User } from "@/lib/types";
+import { AuthResponse, PagedResult, User } from "@/lib/types";
 import { roleNumberToRole, roleToNumber } from "@/lib/auth";
+import Pagination from "@/components/Pagination";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface UserForm {
@@ -16,9 +17,13 @@ interface UserForm {
   role: number;
 }
 
+const PAGE_SIZE = 20;
+
 export default function AdminUsersPage() {
   const { user: currentUser, setSession, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserForm>({
@@ -34,28 +39,36 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (targetPage: number) => {
     setLoading(true);
     try {
-      const response = await api.get<Array<Omit<User, "role"> & { role: number }>>(
-        "/api/admin/users"
+      const response = await api.get<PagedResult<Omit<User, "role"> & { role: number }>>(
+        "/api/admin/users",
+        { params: { page: targetPage, pageSize: PAGE_SIZE } }
       );
       setUsers(
-        (Array.isArray(response.data) ? response.data : []).map((u) => ({
+        (Array.isArray(response.data?.items) ? response.data.items : []).map((u) => ({
           ...u,
           role: roleNumberToRole(u.role),
         }))
       );
+      setTotal(response.data?.total ?? 0);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       setUsers([]);
+      setTotal(0);
     }
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(1);
+  }, [fetchUsers]);
+
+  const handlePageChange = (next: number) => {
+    setPage(next);
+    fetchUsers(next);
+  };
 
   const openCreateModal = () => {
     setEditingUser(null);
@@ -146,7 +159,7 @@ export default function AdminUsersPage() {
         await api.post("/api/admin/users", formData);
       }
       setShowModal(false);
-      fetchUsers();
+      fetchUsers(page);
     } catch (err) {
       setModalError(getErrorMessage(err, "Failed to save user"));
     } finally {
@@ -158,7 +171,7 @@ export default function AdminUsersPage() {
     if (!window.confirm("Remove this account? This cannot be undone.")) return;
     try {
       await api.delete(`/api/admin/users/${id}`);
-      fetchUsers();
+      fetchUsers(page);
     } catch (err) {
       console.error("Failed to delete user:", err);
       alert(getErrorMessage(err, "Failed to delete user"));
@@ -176,7 +189,7 @@ export default function AdminUsersPage() {
       <DashboardLayout allowedRoles={["Admin"]}>
         <div className="title-block">
           <h1>Users</h1>
-          <span className="tb-note">REV · {users.length} accounts</span>
+          <span className="tb-note">REV · {total} accounts</span>
         </div>
 
         <div className="flex justify-end mb-5">
@@ -251,6 +264,12 @@ export default function AdminUsersPage() {
                 })}
               </tbody>
             </table>
+            <Pagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={total}
+              onPageChange={handlePageChange}
+            />
           </div>
         )}
 

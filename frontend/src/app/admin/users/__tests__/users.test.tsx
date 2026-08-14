@@ -52,10 +52,12 @@ const users = [
   { id: "u3", name: "Charlie", email: "admin@example.com", role: 0, createdAt: "2026-01-01T00:00:00Z" },
 ];
 
+const pagedUsers = { items: users, total: users.length, page: 1, pageSize: 20 };
+
 describe("AdminUsersPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGet.mockResolvedValue({ data: users });
+    mockGet.mockResolvedValue({ data: pagedUsers });
   });
 
   it("renders role names as plain text instead of numeric boxes", async () => {
@@ -95,7 +97,7 @@ describe("AdminUsersPage", () => {
 
   it("sends the edited role on save", async () => {
     mockPut.mockResolvedValue({ status: 204 });
-    mockGet.mockResolvedValueOnce({ data: users }).mockResolvedValueOnce({ data: users });
+    mockGet.mockResolvedValueOnce({ data: pagedUsers }).mockResolvedValueOnce({ data: users });
 
     render(<AdminUsersPage />);
 
@@ -146,7 +148,7 @@ describe("AdminUsersPage", () => {
         deletedSelf: false,
       },
     });
-    mockGet.mockResolvedValueOnce({ data: users });
+    mockGet.mockResolvedValueOnce({ data: pagedUsers });
 
     render(<AdminUsersPage />);
 
@@ -183,7 +185,7 @@ describe("AdminUsersPage", () => {
 
   it("deletes own account when transferring admin", async () => {
     mockPost.mockResolvedValue({ data: { currentSession: null, deletedSelf: true } });
-    mockGet.mockResolvedValueOnce({ data: users });
+    mockGet.mockResolvedValueOnce({ data: pagedUsers });
 
     render(<AdminUsersPage />);
 
@@ -219,7 +221,7 @@ describe("AdminUsersPage", () => {
   });
 
   it("disables save until a self role or deletion is chosen when transferring admin", async () => {
-    mockGet.mockResolvedValueOnce({ data: users });
+    mockGet.mockResolvedValueOnce({ data: pagedUsers });
 
     render(<AdminUsersPage />);
 
@@ -241,5 +243,41 @@ describe("AdminUsersPage", () => {
     fireEvent.change(screen.getByLabelText("Your new role"), { target: { value: "1" } });
     expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
     expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it("navigates pages and refetches with the requested page", async () => {
+    const firstPage = { items: users, total: 21, page: 1, pageSize: 20 };
+    const page2 = {
+      items: [
+        { id: "u9", name: "Dana", email: "dana@example.com", role: 2, createdAt: "2026-01-01T00:00:00Z" },
+      ],
+      total: 21,
+      page: 2,
+      pageSize: 20,
+    };
+    mockGet.mockResolvedValueOnce({ data: firstPage }).mockResolvedValueOnce({ data: page2 });
+
+    render(<AdminUsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Alice")).toBeInTheDocument();
+    });
+    const paginationInfo = (text: string) =>
+      screen.getByText(
+        (_, el) => el?.children.length === 0 && (el?.textContent?.includes(text) ?? false)
+      );
+    expect(paginationInfo("Page 1 of 2")).toBeInTheDocument();
+    expect(paginationInfo("21 total")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledWith(
+        "/api/admin/users",
+        { params: { page: 2, pageSize: 20 } }
+      );
+    });
+    expect(await screen.findByText("Dana")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
   });
 });

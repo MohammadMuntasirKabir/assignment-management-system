@@ -1,30 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
-import { Submission } from "@/lib/types";
+import { PagedResult, Submission } from "@/lib/types";
+import Pagination from "@/components/Pagination";
+
+const PAGE_SIZE = 20;
 
 export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async (targetPage: number) => {
     setLoading(true);
     try {
-      const response = await api.get<Submission[]>("/api/admin/submissions");
-      setSubmissions(response.data || []);
+      const response = await api.get<PagedResult<Submission>>("/api/admin/submissions", {
+        params: { page: targetPage, pageSize: PAGE_SIZE },
+      });
+      setSubmissions(response.data?.items || []);
+      setTotal(response.data?.total ?? 0);
     } catch (err) {
       console.error("Failed to fetch:", err);
       setSubmissions([]);
+      setTotal(0);
     }
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSubmissions();
-  }, []);
+    fetchSubmissions(1);
+  }, [fetchSubmissions]);
+
+  const handlePageChange = (next: number) => {
+    setPage(next);
+    fetchSubmissions(next);
+  };
 
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
@@ -32,7 +46,7 @@ export default function AdminSubmissionsPage() {
         <div>
           <div className="title-block">
             <h1>All Submissions</h1>
-            <span className="tb-note">{submissions.length} items</span>
+            <span className="tb-note">{total} items</span>
           </div>
 
           {loading ? (
@@ -66,6 +80,12 @@ export default function AdminSubmissionsPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={total}
+                onPageChange={handlePageChange}
+              />
             </div>
           )}
         </div>

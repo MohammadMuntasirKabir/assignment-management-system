@@ -1,5 +1,12 @@
 export type UserRole = "Admin" | "Teacher" | "Student";
 
+export interface PagedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -123,6 +130,25 @@ export interface AssignTeacherDto {
 export interface EnrollStudentDto {
   studentId: string;
   classId: string;
+}
+
+export interface TeacherAssignmentDto {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  classSubjectId: string;
+  className: string;
+  subjectName: string;
+  createdAt: string;
+}
+
+export interface StudentEnrollmentDto {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  className: string;
+  createdAt: string;
 }
 
 export interface CreateClassDto {

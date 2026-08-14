@@ -26,3 +26,24 @@ public class EnrollStudentDto
     public Guid StudentId { get; set; }
     public Guid ClassId { get; set; }
 }
+
+public class TeacherAssignmentDto
+{
+    public Guid Id { get; set; }
+    public Guid TeacherId { get; set; }
+    public string TeacherName { get; set; } = string.Empty;
+    public Guid ClassSubjectId { get; set; }
+    public string ClassName { get; set; } = string.Empty;
+    public string SubjectName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class StudentEnrollmentDto
+{
+    public Guid Id { get; set; }
+    public Guid StudentId { get; set; }
+    public string StudentName { get; set; } = string.Empty;
+    public Guid ClassId { get; set; }
+    public string ClassName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}

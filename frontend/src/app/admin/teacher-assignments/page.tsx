@@ -1,0 +1,212 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import DashboardLayout from "@/components/DashboardLayout";
+import api, { getErrorMessage } from "@/lib/api";
+import { TeacherAssignmentDto, ClassSubjectDto, User } from "@/lib/types";
+import { roleNumberToRole } from "@/lib/auth";
+import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+export default function AdminTeacherAssignmentsPage() {
+  const [assignments, setAssignments] = useState<TeacherAssignmentDto[]>([]);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [classSubjects, setClassSubjects] = useState<ClassSubjectDto[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ teacherId: "", classSubjectId: "" });
+  const [modalError, setModalError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [asgnRes, usersRes, csRes] = await Promise.all([
+        api.get<TeacherAssignmentDto[]>("/api/admin/teacher-assignments"),
+        api.get<{ items: Array<Omit<User, "role"> & { role: number }> }>("/api/admin/users", {
+          params: { page: 1, pageSize: 1000 },
+        }),
+        api.get<ClassSubjectDto[]>("/api/admin/class-subjects"),
+      ]);
+      setAssignments(asgnRes.data || []);
+      setTeachers(
+        (usersRes.data?.items || [])
+          .filter((u) => roleNumberToRole(u.role) === "Teacher")
+          .map((u) => ({ ...u, role: roleNumberToRole(u.role) }))
+      );
+      setClassSubjects(csRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch:", err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const openCreateModal = () => {
+    setFormData({ teacherId: "", classSubjectId: "" });
+    setModalError("");
+    setShowModal(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.teacherId || !formData.classSubjectId) {
+      setModalError("Pick a teacher and a class-subject link.");
+      return;
+    }
+    setSaving(true);
+    setModalError("");
+    try {
+      await api.post("/api/admin/assign-teacher", {
+        teacherId: formData.teacherId,
+        classSubjectId: formData.classSubjectId,
+      });
+      setShowModal(false);
+      fetchAll();
+    } catch (err) {
+      setModalError(getErrorMessage(err, "Failed to assign teacher"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Remove this teacher assignment?")) return;
+    try {
+      await api.delete(`/api/admin/teacher-assignments/${id}`);
+      fetchAll();
+    } catch (err) {
+      console.error("Failed to delete:", err);
+    }
+  };
+
+  return (
+    <ProtectedRoute allowedRoles={["Admin"]}>
+      <DashboardLayout allowedRoles={["Admin"]}>
+        <div>
+          <div className="title-block">
+            <h1>Teacher Assignments</h1>
+            <button onClick={openCreateModal} className="btn btn-primary">
+              <PlusIcon className="w-4 h-4" />
+              Assign Teacher
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="loading-note">
+              <span className="spinner"></span>
+              Loading…
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="empty-state">No teacher assignments yet.</div>
+          ) : (
+            <div className="sheet overflow-x-auto">
+              <table className="table-sheet">
+                <thead>
+                  <tr>
+                    <th>Teacher</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th aria-label="Actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignments.map((a) => (
+                    <tr key={a.id}>
+                      <td className="font-medium">{a.teacherName}</td>
+                      <td>{a.className}</td>
+                      <td>{a.subjectName}</td>
+                      <td className="whitespace-nowrap">
+                        <button
+                          className="icon-btn icon-btn-danger"
+                          onClick={() => handleDelete(a.id)}
+                          aria-label={`Remove ${a.teacherName} from ${a.className} – ${a.subjectName}`}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showModal && (
+            <div
+              className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Assign teacher"
+              onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+            >
+              <div className="modal-sheet">
+                <div className="modal-head">
+                  <h2>Assign Teacher to Class–Subject</h2>
+                  <button
+                    className="icon-btn"
+                    onClick={() => setShowModal(false)}
+                    aria-label="Close"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  {modalError && (
+                    <div className="notice notice-error" role="alert">{modalError}</div>
+                  )}
+                  <div className="space-y-4">
+                    <div className="field">
+                      <label htmlFor="ta-teacher">Teacher</label>
+                      <select
+                        id="ta-teacher"
+                        className="select"
+                        value={formData.teacherId}
+                        onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                      >
+                        <option value="">Select a teacher</option>
+                        {teachers.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      {teachers.length === 0 && (
+                        <p className="field-error">No teacher accounts exist yet.</p>
+                      )}
+                    </div>
+                    <div className="field">
+                      <label htmlFor="ta-class-subject">Class–Subject</label>
+                      <select
+                        id="ta-class-subject"
+                        className="select"
+                        value={formData.classSubjectId}
+                        onChange={(e) => setFormData({ ...formData, classSubjectId: e.target.value })}
+                      >
+                        <option value="">Select a class–subject</option>
+                        {classSubjects.map((cs) => (
+                          <option key={cs.id} value={cs.id}>{cs.className} – {cs.subjectName}</option>
+                        ))}
+                      </select>
+                      {classSubjects.length === 0 && (
+                        <p className="field-error">Create class–subject links first.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-foot">
+                  <button className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={saving}>
+                    Cancel
+                  </button>
+                  <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
+                    {saving ? "Assigning…" : "Assign"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
+  );
+}

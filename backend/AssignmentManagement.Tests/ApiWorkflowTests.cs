@@ -909,6 +909,218 @@ public class ApiWorkflowTests : IDisposable
         StatusCodeOf(result).Should().Be(400);
     }
 
+    // ---- Teacher assignments & enrollments (admin) ----
+
+    [Fact]
+    public async Task Admin_GetTeacherAssignments_ReturnsListWithNames()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.GetTeacherAssignments();
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var items = (ok.Value as IEnumerable<TeacherAssignmentDto>)!.ToList();
+        items.Should().HaveCount(2);
+        items.Should().ContainSingle(a => a.TeacherId == data.Teacher1.Id
+            && a.ClassName == data.ClassSubject1.Class.Name
+            && a.SubjectName == data.ClassSubject1.Subject.Name);
+    }
+
+    [Fact]
+    public async Task Admin_AssignTeacher_ReturnsCreatedAssignment()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.AssignTeacher(new AssignTeacherDto
+        {
+            TeacherId = data.Teacher2.Id,
+            ClassSubjectId = data.ClassSubject1.Id
+        });
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var dto = (ok.Value as TeacherAssignmentDto)!;
+        dto.TeacherId.Should().Be(data.Teacher2.Id);
+        dto.TeacherName.Should().Be(data.Teacher2.Name);
+        dto.ClassName.Should().Be(data.ClassSubject1.Class.Name);
+        dto.SubjectName.Should().Be(data.ClassSubject1.Subject.Name);
+    }
+
+    [Fact]
+    public async Task Admin_AssignTeacher_Duplicate_ReturnsConflict()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.AssignTeacher(new AssignTeacherDto
+        {
+            TeacherId = data.Teacher1.Id,
+            ClassSubjectId = data.ClassSubject1.Id
+        });
+
+        result.Should().BeOfType<ConflictObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_AssignTeacher_UnknownTeacher_ReturnsNotFound()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.AssignTeacher(new AssignTeacherDto
+        {
+            TeacherId = Guid.NewGuid(),
+            ClassSubjectId = data.ClassSubject1.Id
+        });
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_AssignStudent_AsTeacher_ReturnsNotFound()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.AssignTeacher(new AssignTeacherDto
+        {
+            TeacherId = data.Student1.Id,
+            ClassSubjectId = data.ClassSubject1.Id
+        });
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_DeleteTeacherAssignment_Works()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var entity = await _context.TeacherClassSubjects.SingleAsync(tcs =>
+            tcs.TeacherId == data.Teacher1.Id && tcs.ClassSubjectId == data.ClassSubject1.Id);
+
+        var result = await controller.DeleteTeacherAssignment(entity.Id);
+
+        result.Should().BeOfType<NoContentResult>();
+        (await _context.TeacherClassSubjects.FindAsync(entity.Id)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Admin_DeleteTeacherAssignment_NotFound_Returns404()
+    {
+        await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.DeleteTeacherAssignment(Guid.NewGuid());
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_GetEnrollments_ReturnsListWithNames()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.GetEnrollments();
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var items = (ok.Value as IEnumerable<StudentEnrollmentDto>)!.ToList();
+        items.Should().HaveCount(2);
+        items.Should().ContainSingle(e => e.StudentId == data.Student1.Id
+            && e.ClassName == data.Class1.Name);
+    }
+
+    [Fact]
+    public async Task Admin_EnrollStudent_ReturnsCreatedEnrollment()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.EnrollStudent(new EnrollStudentDto
+        {
+            StudentId = data.Student1.Id,
+            ClassId = data.ClassSubject2.ClassId
+        });
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var dto = (ok.Value as StudentEnrollmentDto)!;
+        dto.StudentId.Should().Be(data.Student1.Id);
+        dto.StudentName.Should().Be(data.Student1.Name);
+        dto.ClassId.Should().Be(data.ClassSubject2.ClassId);
+    }
+
+    [Fact]
+    public async Task Admin_EnrollStudent_Duplicate_ReturnsConflict()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.EnrollStudent(new EnrollStudentDto
+        {
+            StudentId = data.Student1.Id,
+            ClassId = data.Class1.Id
+        });
+
+        result.Should().BeOfType<ConflictObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_EnrollStudent_UnknownStudent_ReturnsNotFound()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.EnrollStudent(new EnrollStudentDto
+        {
+            StudentId = Guid.NewGuid(),
+            ClassId = data.Class1.Id
+        });
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_EnrollTeacher_AsStudent_ReturnsNotFound()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.EnrollStudent(new EnrollStudentDto
+        {
+            StudentId = data.Teacher1.Id,
+            ClassId = data.Class1.Id
+        });
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task Admin_DeleteEnrollment_Works()
+    {
+        var data = await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+        var entity = await _context.ClassStudents.SingleAsync(cs =>
+            cs.StudentId == data.Student1.Id && cs.ClassId == data.Class1.Id);
+
+        var result = await controller.DeleteEnrollment(entity.Id);
+
+        result.Should().BeOfType<NoContentResult>();
+        (await _context.ClassStudents.FindAsync(entity.Id)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Admin_DeleteEnrollment_NotFound_Returns404()
+    {
+        await SetupAsync();
+        var controller = TestHelpers.CreateAdminController(_context);
+
+        var result = await controller.DeleteEnrollment(Guid.NewGuid());
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
     public void Dispose()
     {
         _context.Dispose();
