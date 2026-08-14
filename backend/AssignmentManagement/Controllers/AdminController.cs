@@ -58,24 +58,26 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("users/{id:guid}")]
+    public async Task<ActionResult<UserResponseDto>> GetUserById(Guid id)
+    {
+        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null)
+            return NotFound(ApiErrors.NotFound("User not found"));
+        return Ok(DtoMapper.ToUser(user));
+    }
+
     [HttpPost("users")]
     public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] RegisterDto dto)
     {
         if (dto.Role == UserRole.Admin)
-            return BadRequest(new { message = "There can only be one admin. Select an existing account to take over the admin role instead." });
+            return BadRequest(ApiErrors.BadRequest("There can only be one admin. Select an existing account to take over the admin role instead."));
 
         var user = await _authService.CreateUserAsync(dto);
         if (user == null)
-            return Conflict(new { message = "User with this email already exists" });
+            return Conflict(ApiErrors.Conflict("User with this email already exists"));
 
-        return CreatedAtAction(nameof(GetUsers), new UserResponseDto
-        {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            Role = user.Role,
-            CreatedAt = user.CreatedAt
-        });
+        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, DtoMapper.ToUser(user));
     }
 
     [HttpPut("users/{id:guid}")]
@@ -83,20 +85,21 @@ public class AdminController : ControllerBase
     {
         var currentUserId = _authService.GetUserIdFromToken(User);
         if (id == currentUserId && dto.Role != UserRole.Admin)
-            return BadRequest(new { message = "You cannot change your own role. Transfer the admin role to another account instead." });
+            return BadRequest(ApiErrors.BadRequest("You cannot change your own role. Transfer the admin role to another account instead."));
         if (id != currentUserId && dto.Role == UserRole.Admin)
-            return BadRequest(new { message = "There can only be one admin. Use the admin transfer option to select a new admin." });
+            return BadRequest(ApiErrors.BadRequest("There can only be one admin. Use the admin transfer option to select a new admin."));
 
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound(new { message = "User not found" });
+            return NotFound(ApiErrors.NotFound("User not found"));
 
-        var emailInUse = await _context.Users.AnyAsync(u => u.Email == dto.Email && u.Id != id);
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        var emailInUse = await _context.Users.AnyAsync(u => u.Email == normalizedEmail && u.Id != id);
         if (emailInUse)
-            return Conflict(new { message = "Another user already uses this email" });
+            return Conflict(ApiErrors.Conflict("Another user already uses this email"));
 
         user.Name = dto.Name;
-        user.Email = dto.Email;
+        user.Email = normalizedEmail;
         user.Role = dto.Role;
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
@@ -108,25 +111,21 @@ public class AdminController : ControllerBase
     {
         var currentUserId = _authService.GetUserIdFromToken(User);
         if (id == currentUserId)
-            return BadRequest(new { message = "You cannot delete your own account" });
+            return BadRequest(ApiErrors.BadRequest("You cannot delete your own account"));
 
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound(new { message = "User not found" });
+            return NotFound(ApiErrors.NotFound("User not found"));
 
-        try
-        {
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            return BadRequest(new { message = UserReferencedDeleteMessage });
-        }
-        catch (InvalidOperationException)
-        {
-            return BadRequest(new { message = UserReferencedDeleteMessage });
-        }
+        var hasReferences = await _context.TeacherClassSubjects.AnyAsync(tcs => tcs.TeacherId == id)
+            || await _context.ClassStudents.AnyAsync(cs => cs.StudentId == id)
+            || await _context.Assignments.AnyAsync(a => a.TeacherId == id)
+            || await _context.Submissions.AnyAsync(s => s.StudentId == id);
+        if (hasReferences)
+            return BadRequest(ApiErrors.BadRequest(UserReferencedDeleteMessage));
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
         return NoContent();
     }
 
@@ -135,53 +134,47 @@ public class AdminController : ControllerBase
     {
         var currentUserId = _authService.GetUserIdFromToken(User);
         if (dto.TargetUserId == currentUserId)
-            return BadRequest(new { message = "You cannot select yourself as the new admin" });
+            return BadRequest(ApiErrors.BadRequest("You cannot select yourself as the new admin"));
 
         var target = await _context.Users.FindAsync(dto.TargetUserId);
         if (target == null)
-            return NotFound(new { message = "Target account not found" });
+            return NotFound(ApiErrors.NotFound("Target account not found"));
         if (target.Role == UserRole.Admin)
-            return BadRequest(new { message = "That account is already the admin" });
+            return BadRequest(ApiErrors.BadRequest("That account is already the admin"));
 
         var current = await _context.Users.FindAsync(currentUserId);
         if (current == null || current.Role != UserRole.Admin)
-            return BadRequest(new { message = "Only the admin can transfer the admin role" });
+            return BadRequest(ApiErrors.BadRequest("Only the admin can transfer the admin role"));
 
         var demotingSelf = !dto.DeleteSelf && dto.SelfRole.HasValue && dto.SelfRole.Value != UserRole.Admin;
         if (!dto.DeleteSelf && !demotingSelf)
-            return BadRequest(new { message = "After selecting a new admin, choose a new role for your account or delete it" });
+            return BadRequest(ApiErrors.BadRequest("After selecting a new admin, choose a new role for your account or delete it"));
 
         target.Role = UserRole.Admin;
         target.UpdatedAt = DateTime.UtcNow;
 
         AuthResponseDto? demotedSession = null;
-        try
+        if (dto.DeleteSelf)
         {
-            if (dto.DeleteSelf)
-            {
-                _context.Users.Remove(current);
-            }
-            else
-            {
-                current.Role = dto.SelfRole!.Value;
-                current.UpdatedAt = DateTime.UtcNow;
-                demotedSession = _authService.BuildAuthResponse(current);
-            }
+            var hasReferences = await _context.TeacherClassSubjects.AnyAsync(tcs => tcs.TeacherId == currentUserId)
+                || await _context.Assignments.AnyAsync(a => a.TeacherId == currentUserId);
+            if (hasReferences)
+                return BadRequest(ApiErrors.BadRequest("Cannot delete your account while it still owns classes or assignments. Choose a new role instead, or transfer that work first."));
 
-            await _context.SaveChangesAsync();
+            _context.Users.Remove(current);
         }
-        catch (DbUpdateException)
+        else
         {
-            return BadRequest(new { message = "Cannot delete your account while it still owns classes or assignments. Choose a new role instead, or transfer that work first." });
+            current.Role = dto.SelfRole!.Value;
+            current.UpdatedAt = DateTime.UtcNow;
+            demotedSession = _authService.BuildAuthResponse(current);
         }
-        catch (InvalidOperationException)
-        {
-            return BadRequest(new { message = "Cannot delete your account while it still owns classes or assignments. Choose a new role instead, or transfer that work first." });
-        }
+
+        await _context.SaveChangesAsync();
 
         return Ok(new AdminTransferResultDto
         {
-            Target = new UserResponseDto { Id = target.Id, Name = target.Name, Email = target.Email, Role = target.Role, CreatedAt = target.CreatedAt },
+            Target = DtoMapper.ToUser(target),
             CurrentSession = demotedSession,
             DeletedSelf = dto.DeleteSelf
         });
@@ -192,16 +185,19 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<IEnumerable<ClassResponseDto>>> GetClasses()
     {
         var classes = await _context.Classes
+            .AsNoTracking()
             .OrderBy(c => c.Name)
-            .Select(c => new ClassResponseDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description,
-                CreatedAt = c.CreatedAt
-            })
             .ToListAsync();
-        return Ok(classes);
+        return Ok(classes.Select(DtoMapper.ToClass));
+    }
+
+    [HttpGet("classes/{id:guid}")]
+    public async Task<ActionResult<ClassResponseDto>> GetClassById(Guid id)
+    {
+        var entity = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        if (entity == null)
+            return NotFound(ApiErrors.NotFound("Class not found"));
+        return Ok(DtoMapper.ToClass(entity));
     }
 
     [HttpPost("classes")]
@@ -211,13 +207,7 @@ public class AdminController : ControllerBase
         _context.Classes.Add(entity);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetClasses), new ClassResponseDto
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            Description = entity.Description,
-            CreatedAt = entity.CreatedAt
-        });
+        return CreatedAtAction(nameof(GetClassById), new { id = entity.Id }, DtoMapper.ToClass(entity));
     }
 
     [HttpPut("classes/{id:guid}")]
@@ -225,7 +215,7 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.Classes.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Class not found" });
+            return NotFound(ApiErrors.NotFound("Class not found"));
 
         entity.Name = dto.Name;
         entity.Description = dto.Description;
@@ -239,7 +229,13 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.Classes.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Class not found" });
+            return NotFound(ApiErrors.NotFound("Class not found"));
+
+        var hasReferences = await _context.ClassSubjects.AnyAsync(cs => cs.ClassId == id)
+            || await _context.ClassStudents.AnyAsync(cs => cs.ClassId == id);
+        if (hasReferences)
+            return BadRequest(ApiErrors.BadRequest(
+                "Cannot delete this class while it is still linked to subjects or enrolled students. Remove those links first."));
 
         _context.Classes.Remove(entity);
         await _context.SaveChangesAsync();
@@ -251,16 +247,19 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<IEnumerable<SubjectResponseDto>>> GetSubjects()
     {
         var subjects = await _context.Subjects
+            .AsNoTracking()
             .OrderBy(s => s.Name)
-            .Select(s => new SubjectResponseDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                CreatedAt = s.CreatedAt
-            })
             .ToListAsync();
-        return Ok(subjects);
+        return Ok(subjects.Select(DtoMapper.ToSubject));
+    }
+
+    [HttpGet("subjects/{id:guid}")]
+    public async Task<ActionResult<SubjectResponseDto>> GetSubjectById(Guid id)
+    {
+        var entity = await _context.Subjects.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
+        if (entity == null)
+            return NotFound(ApiErrors.NotFound("Subject not found"));
+        return Ok(DtoMapper.ToSubject(entity));
     }
 
     [HttpPost("subjects")]
@@ -270,13 +269,7 @@ public class AdminController : ControllerBase
         _context.Subjects.Add(entity);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetSubjects), new SubjectResponseDto
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            Description = entity.Description,
-            CreatedAt = entity.CreatedAt
-        });
+        return CreatedAtAction(nameof(GetSubjectById), new { id = entity.Id }, DtoMapper.ToSubject(entity));
     }
 
     [HttpPut("subjects/{id:guid}")]
@@ -284,7 +277,7 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.Subjects.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Subject not found" });
+            return NotFound(ApiErrors.NotFound("Subject not found"));
 
         entity.Name = dto.Name;
         entity.Description = dto.Description;
@@ -298,7 +291,12 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.Subjects.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Subject not found" });
+            return NotFound(ApiErrors.NotFound("Subject not found"));
+
+        var hasReferences = await _context.ClassSubjects.AnyAsync(cs => cs.SubjectId == id);
+        if (hasReferences)
+            return BadRequest(ApiErrors.BadRequest(
+                "Cannot delete this subject while it is still linked to classes. Remove those links first."));
 
         _context.Subjects.Remove(entity);
         await _context.SaveChangesAsync();
@@ -312,10 +310,24 @@ public class AdminController : ControllerBase
         var result = await _context.ClassSubjects
             .Include(cs => cs.Class)
             .Include(cs => cs.Subject)
-            .OrderBy(cs => cs.Class.Name)
-            .ThenBy(cs => cs.Subject.Name)
+            .AsNoTracking()
+            .OrderBy(cs => cs.Class!.Name)
+            .ThenBy(cs => cs.Subject!.Name)
             .ToListAsync();
         return Ok(result.Select(DtoMapper.ToClassSubject));
+    }
+
+    [HttpGet("class-subjects/{id:guid}")]
+    public async Task<ActionResult<ClassSubjectDto>> GetClassSubjectById(Guid id)
+    {
+        var entity = await _context.ClassSubjects
+            .Include(cs => cs.Class)
+            .Include(cs => cs.Subject)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cs => cs.Id == id);
+        if (entity == null)
+            return NotFound(ApiErrors.NotFound("Class-subject link not found"));
+        return Ok(DtoMapper.ToClassSubject(entity));
     }
 
     [HttpPost("class-subjects")]
@@ -323,16 +335,16 @@ public class AdminController : ControllerBase
     {
         var classExists = await _context.Classes.AnyAsync(c => c.Id == dto.ClassId);
         if (!classExists)
-            return NotFound(new { message = "Class not found" });
+            return NotFound(ApiErrors.NotFound("Class not found"));
 
         var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == dto.SubjectId);
         if (!subjectExists)
-            return NotFound(new { message = "Subject not found" });
+            return NotFound(ApiErrors.NotFound("Subject not found"));
 
         var existing = await _context.ClassSubjects
             .FirstOrDefaultAsync(cs => cs.ClassId == dto.ClassId && cs.SubjectId == dto.SubjectId);
         if (existing != null)
-            return Conflict(new { message = "This class-subject combination already exists" });
+            return Conflict(ApiErrors.Conflict("This class-subject combination already exists"));
 
         var entity = new ClassSubject
         {
@@ -344,12 +356,7 @@ public class AdminController : ControllerBase
         _context.ClassSubjects.Add(entity);
         await _context.SaveChangesAsync();
 
-        var result = await _context.ClassSubjects
-            .Include(cs => cs.Class)
-            .Include(cs => cs.Subject)
-            .FirstAsync(cs => cs.Id == entity.Id);
-
-        return CreatedAtAction(nameof(GetClassSubjects), DtoMapper.ToClassSubject(result));
+        return CreatedAtAction(nameof(GetClassSubjectById), new { id = entity.Id }, DtoMapper.ToClassSubject(entity));
     }
 
     [HttpDelete("class-subjects/{id:guid}")]
@@ -357,7 +364,13 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.ClassSubjects.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Class-subject link not found" });
+            return NotFound(ApiErrors.NotFound("Class-subject link not found"));
+
+        var hasReferences = await _context.TeacherClassSubjects.AnyAsync(tcs => tcs.ClassSubjectId == id)
+            || await _context.Assignments.AnyAsync(a => a.ClassSubjectId == id);
+        if (hasReferences)
+            return BadRequest(ApiErrors.BadRequest(
+                "Cannot delete this class-subject link while teachers are assigned to it or assignments exist for it. Remove those first."));
 
         _context.ClassSubjects.Remove(entity);
         await _context.SaveChangesAsync();
@@ -372,20 +385,20 @@ public class AdminController : ControllerBase
             .Include(cs => cs.Subject)
             .FirstOrDefaultAsync(cs => cs.Id == id);
         if (entity == null)
-            return NotFound(new { message = "Class-subject link not found" });
+            return NotFound(ApiErrors.NotFound("Class-subject link not found"));
 
         var classExists = await _context.Classes.AnyAsync(c => c.Id == dto.ClassId);
         if (!classExists)
-            return NotFound(new { message = "Class not found" });
+            return NotFound(ApiErrors.NotFound("Class not found"));
 
         var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == dto.SubjectId);
         if (!subjectExists)
-            return NotFound(new { message = "Subject not found" });
+            return NotFound(ApiErrors.NotFound("Subject not found"));
 
         var existing = await _context.ClassSubjects
             .FirstOrDefaultAsync(cs => cs.Id != id && cs.ClassId == dto.ClassId && cs.SubjectId == dto.SubjectId);
         if (existing != null)
-            return Conflict(new { message = "This class-subject combination already exists" });
+            return Conflict(ApiErrors.Conflict("This class-subject combination already exists"));
 
         entity.ClassId = dto.ClassId;
         entity.SubjectId = dto.SubjectId;
@@ -405,16 +418,16 @@ public class AdminController : ControllerBase
     {
         var teacher = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.TeacherId && u.Role == UserRole.Teacher);
         if (teacher == null)
-            return NotFound(new { message = "Teacher not found" });
+            return NotFound(ApiErrors.NotFound("Teacher not found"));
 
         var classSubject = await _context.ClassSubjects.FindAsync(dto.ClassSubjectId);
         if (classSubject == null)
-            return NotFound(new { message = "Class-subject not found" });
+            return NotFound(ApiErrors.NotFound("Class-subject not found"));
 
         var existing = await _context.TeacherClassSubjects
             .AnyAsync(tcs => tcs.TeacherId == dto.TeacherId && tcs.ClassSubjectId == dto.ClassSubjectId);
         if (existing)
-            return Conflict(new { message = "Teacher is already assigned to this class-subject" });
+            return Conflict(ApiErrors.Conflict("Teacher is already assigned to this class-subject"));
 
         var teacherAssignment = new TeacherClassSubject
         {
@@ -447,6 +460,7 @@ public class AdminController : ControllerBase
                 .ThenInclude(cs => cs.Class)
             .Include(tcs => tcs.ClassSubject)
                 .ThenInclude(cs => cs.Subject)
+            .AsNoTracking()
             .OrderBy(tcs => tcs.Teacher!.Name)
             .ThenBy(tcs => tcs.ClassSubject!.Class!.Name)
             .ThenBy(tcs => tcs.ClassSubject!.Subject!.Name)
@@ -459,7 +473,7 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.TeacherClassSubjects.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Teacher assignment not found" });
+            return NotFound(ApiErrors.NotFound("Teacher assignment not found"));
 
         _context.TeacherClassSubjects.Remove(entity);
         await _context.SaveChangesAsync();
@@ -472,16 +486,16 @@ public class AdminController : ControllerBase
     {
         var student = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.StudentId && u.Role == UserRole.Student);
         if (student == null)
-            return NotFound(new { message = "Student not found" });
+            return NotFound(ApiErrors.NotFound("Student not found"));
 
         var classEntity = await _context.Classes.FindAsync(dto.ClassId);
         if (classEntity == null)
-            return NotFound(new { message = "Class not found" });
+            return NotFound(ApiErrors.NotFound("Class not found"));
 
         var existing = await _context.ClassStudents
             .AnyAsync(cs => cs.StudentId == dto.StudentId && cs.ClassId == dto.ClassId);
         if (existing)
-            return Conflict(new { message = "Student is already enrolled in this class" });
+            return Conflict(ApiErrors.Conflict("Student is already enrolled in this class"));
 
         var classStudent = new ClassStudent
         {
@@ -508,6 +522,7 @@ public class AdminController : ControllerBase
         var enrollments = await _context.ClassStudents
             .Include(cs => cs.Student)
             .Include(cs => cs.Class)
+            .AsNoTracking()
             .OrderBy(cs => cs.Student!.Name)
             .ThenBy(cs => cs.Class!.Name)
             .ToListAsync();
@@ -519,7 +534,7 @@ public class AdminController : ControllerBase
     {
         var entity = await _context.ClassStudents.FindAsync(id);
         if (entity == null)
-            return NotFound(new { message = "Enrollment not found" });
+            return NotFound(ApiErrors.NotFound("Enrollment not found"));
 
         _context.ClassStudents.Remove(entity);
         await _context.SaveChangesAsync();

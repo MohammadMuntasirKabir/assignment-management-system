@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
-import { getStoredUser } from "@/lib/auth";
 import { Assignment, CreateAssignmentDto, ClassSubjectDto } from "@/lib/types";
+import { assignmentStatusLabel, assignmentStampClass } from "@/lib/status";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function TeacherAssignmentsPage() {
@@ -17,7 +19,6 @@ export default function TeacherAssignmentsPage() {
     title: "",
     description: "",
     classSubjectId: "",
-    teacherId: "",
     deadline: "",
     maxMarks: 0,
     status: "Draft" as "Draft" | "Published",
@@ -56,7 +57,6 @@ export default function TeacherAssignmentsPage() {
       title: "",
       description: "",
       classSubjectId: "",
-      teacherId: "",
       deadline: "",
       maxMarks: 0,
       status: "Draft",
@@ -71,7 +71,6 @@ export default function TeacherAssignmentsPage() {
       title: assignment.title,
       description: assignment.description,
       classSubjectId: assignment.classSubjectId,
-      teacherId: assignment.teacherId,
       deadline: assignment.deadline,
       maxMarks: assignment.maxMarks,
       status: assignment.status,
@@ -86,8 +85,7 @@ export default function TeacherAssignmentsPage() {
       return;
     }
     try {
-      const teacherId = getStoredUser()?.id ?? "";
-      const payload = { ...formData, teacherId };
+      const payload = { ...formData };
       if (editingAssignment) {
         await api.put(`/api/teacher/assignments/${editingAssignment.id}`, payload);
       } else {
@@ -111,12 +109,6 @@ export default function TeacherAssignmentsPage() {
     }
   };
 
-  const statusText = (status: string) =>
-    status === "Published" ? "Published" : "Draft";
-
-  const statusStamp = (status: string) =>
-    status === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
-
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
       <DashboardLayout allowedRoles={["Teacher"]}>
@@ -130,12 +122,9 @@ export default function TeacherAssignmentsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : assignments.length === 0 ? (
-            <div className="empty-state">You have not created any assignments yet.</div>
+            <EmptyState>You have not created any assignments yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">
@@ -159,7 +148,7 @@ export default function TeacherAssignmentsPage() {
                       <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                       <td className="tnum">{a.maxMarks}</td>
                       <td>
-                        <span className={statusStamp(a.status)}>{statusText(a.status)}</span>
+                        <span className={assignmentStampClass(a.status)}>{assignmentStatusLabel(a.status)}</span>
                       </td>
                       <td className="whitespace-nowrap">
                         <button

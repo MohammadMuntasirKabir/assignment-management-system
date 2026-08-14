@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using AssignmentManagement.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
     ?? throw new InvalidOperationException("JWT Settings not configured");
+
+const string placeholderSecret = "THIS_SHOULD_BE_REPLACED_WITH_A_SECURE_KEY_IN_PRODUCTION_USE_AT_LEAST_32_CHARS";
+if (builder.Environment.IsProduction()
+    && (string.IsNullOrWhiteSpace(jwtSettings.SecretKey)
+        || jwtSettings.SecretKey.Length < 32
+        || jwtSettings.SecretKey.Equals(placeholderSecret, StringComparison.Ordinal)))
+{
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey must be a secure random value of at least 32 characters in Production. " +
+        "Set the JwtSettings__SecretKey environment variable (or JWT_SECRET in the .env file used by docker-compose).");
+}
 
 builder.Services.AddSingleton(jwtSettings);
 
@@ -32,6 +44,17 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (string.IsNullOrEmpty(context.Token))
+            {
+                context.Token = context.Request.Cookies[AuthController.TokenCookieName];
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -46,7 +69,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:3001", "http://127.0.0.1:3001",
                 "http://localhost:3002", "http://127.0.0.1:3002")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -86,7 +110,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>
@@ -117,19 +144,10 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<AppDbContext>();
-        context.Database.Migrate();
-        DbSeeder.SeedAsync(context).Wait();
-        app.Logger.LogInformation("Database seeded successfully.");
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-    }
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await context.Database.MigrateAsync();
+    await DbSeeder.SeedAsync(context);
+    app.Logger.LogInformation("Database migrated and seeded successfully.");
 }
 
 app.Run();

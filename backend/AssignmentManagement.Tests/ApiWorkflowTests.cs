@@ -44,7 +44,6 @@ public class ApiWorkflowTests : IDisposable
         var dto = new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         };
 
@@ -64,7 +63,6 @@ public class ApiWorkflowTests : IDisposable
         var dto = new CreateSubmissionDto
         {
             AssignmentId = data.DraftAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         };
 
@@ -81,7 +79,6 @@ public class ApiWorkflowTests : IDisposable
         var dto = new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         };
 
@@ -92,20 +89,21 @@ public class ApiWorkflowTests : IDisposable
     }
 
     [Fact]
-    public async Task Student_CannotSubmitForAnotherStudent_ReturnsForbidden()
+    public async Task Student_SubmissionOwnerComesFromToken_NotFromDto()
     {
         var data = await SetupAsync();
         var controller = StudentAs(data.Student1);
         var dto = new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student2.Id,
-            Content = "Impersonation attempt"
+            Content = "My answer"
         };
 
         var result = await controller.CreateSubmission(dto);
 
-        StatusCodeOf(result.Result).Should().Be(403);
+        var created = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        var value = created.Value.Should().BeOfType<SubmissionResponseDto>().Subject;
+        value.StudentId.Should().Be(data.Student1.Id);
     }
 
     [Fact]
@@ -116,7 +114,6 @@ public class ApiWorkflowTests : IDisposable
         var dto = new CreateSubmissionDto
         {
             AssignmentId = data.OtherTeacherAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         };
 
@@ -133,7 +130,6 @@ public class ApiWorkflowTests : IDisposable
         var dto = new CreateSubmissionDto
         {
             AssignmentId = data.PastAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "Late answer"
         };
 
@@ -152,7 +148,6 @@ public class ApiWorkflowTests : IDisposable
         await controller.CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "Original"
         });
 
@@ -176,7 +171,6 @@ public class ApiWorkflowTests : IDisposable
         await controller.CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.PastAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "Late answer"
         });
 
@@ -198,7 +192,6 @@ public class ApiWorkflowTests : IDisposable
         await studentController.CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         });
 
@@ -228,7 +221,6 @@ public class ApiWorkflowTests : IDisposable
         await other.CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.OtherTeacherAssignment.Id,
-            StudentId = data.Student2.Id,
             Content = "Student two answer"
         });
 
@@ -273,7 +265,6 @@ public class ApiWorkflowTests : IDisposable
             Title = "New Assignment",
             Description = "Description",
             ClassSubjectId = data.ClassSubject1.Id,
-            TeacherId = data.Teacher1.Id,
             Deadline = DateTime.UtcNow.AddDays(5),
             MaxMarks = 60,
             Status = AssignmentStatus.Draft
@@ -296,7 +287,6 @@ public class ApiWorkflowTests : IDisposable
             Title = "Should Fail",
             Description = "Description",
             ClassSubjectId = data.ClassSubject2.Id,
-            TeacherId = data.Teacher1.Id,
             Deadline = DateTime.UtcNow.AddDays(5),
             MaxMarks = 60,
             Status = AssignmentStatus.Draft
@@ -306,23 +296,24 @@ public class ApiWorkflowTests : IDisposable
     }
 
     [Fact]
-    public async Task Teacher_CannotCreateAssignment_ForAnotherTeacher_ReturnsForbidden()
+    public async Task Teacher_AssignmentOwnerComesFromToken_NotFromDto()
     {
         var data = await SetupAsync();
         var controller = TeacherAs(data.Teacher1);
 
         var result = await controller.CreateAssignment(new CreateAssignmentDto
         {
-            Title = "Impersonation",
+            Title = "Token Identity",
             Description = "Description",
             ClassSubjectId = data.ClassSubject1.Id,
-            TeacherId = data.Teacher2.Id,
             Deadline = DateTime.UtcNow.AddDays(5),
             MaxMarks = 60,
             Status = AssignmentStatus.Draft
         });
 
-        StatusCodeOf(result.Result).Should().Be(403);
+        var ok = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        var created = (AssignmentResponseDto)ok.Value!;
+        created.TeacherId.Should().Be(data.Teacher1.Id);
     }
 
     [Fact]
@@ -382,7 +373,6 @@ public class ApiWorkflowTests : IDisposable
         await StudentAs(data.Student1).CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         });
 
@@ -413,7 +403,6 @@ public class ApiWorkflowTests : IDisposable
         await StudentAs(data.Student2).CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.OtherTeacherAssignment.Id,
-            StudentId = data.Student2.Id,
             Content = "Student two answer"
         });
 
@@ -440,7 +429,6 @@ public class ApiWorkflowTests : IDisposable
         await StudentAs(data.Student1).CreateSubmission(new CreateSubmissionDto
         {
             AssignmentId = data.PublishedAssignment.Id,
-            StudentId = data.Student1.Id,
             Content = "My answer"
         });
 

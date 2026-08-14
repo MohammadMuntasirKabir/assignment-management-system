@@ -272,7 +272,24 @@ Once the backend is running, the interactive API documentation is available at:
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-**Note:** No real passwords, API keys, or secrets are committed to the repository. All sensitive values should be set via environment variables.
+### Production Configuration
+
+For `docker-compose` deployments, copy `.env.example` to `.env` in the repository root and set the values below. The backend refuses to start in the **Production** environment if the JWT secret is empty, shorter than 32 characters, or still equal to the placeholder value committed in `appsettings.json`.
+
+```bash
+# Generate a secure JWT secret, e.g.:
+openssl rand -base64 48
+
+# .env (do not commit)
+JWT_SECRET=<secure random value, >=32 chars>
+POSTGRES_PASSWORD=<strong database password>
+```
+
+```bash
+docker compose up --build
+```
+
+Secrets are resolved by `docker-compose.yml` via `${JWT_SECRET:-}` and `${POSTGRES_PASSWORD:-asm_pass}` substitutions. `POSTGRES_PASSWORD` overrides both the container's default and the value baked into `appsettings.json`, so it must be set whenever the database is created for the first time. If `JWT_SECRET` is not provided, the backend will fail fast at startup rather than boot with the committed placeholder.
 
 ## Assumptions
 
@@ -286,9 +303,9 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 ## Known Limitations
 
 1. No email notification system for assignment deadlines (planned for future enhancement).
-2. No pagination on list endpoints — all records are returned at once (suitable for small-scale deployments).
+2. List endpoints are paginated but do not expose a search/filter API.
 3. No file upload for submissions — students submit text content only.
-4. No admin UI for assigning teachers to class-subjects or enrolling students (these can be done via API or by seeding data).
+4. The JWT secret and database password in `appsettings.json` are **local-development placeholders only**. Production must override them via environment variables (the backend enforces this at startup in the Production environment — see "Production Configuration").
 
 ## License
 

@@ -10,6 +10,8 @@ namespace AssignmentManagement.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    public const string TokenCookieName = "asm_token";
+
     private readonly IAuthService _authService;
 
     public AuthController(IAuthService authService)
@@ -23,8 +25,9 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(dto);
         if (result == null)
-            return Unauthorized(new { message = "Invalid email or password" });
+            return Unauthorized(ApiErrors.Unauthorized("Invalid email or password"));
 
+        SetTokenCookie(result.Token, result.ExpiresAt);
         return Ok(result);
     }
 
@@ -38,8 +41,28 @@ public class AuthController : ControllerBase
 
         var result = await _authService.RegisterAsync(dto);
         if (result == null)
-            return Conflict(new { message = "An account with this email already exists" });
+            return Conflict(ApiErrors.Conflict("An account with this email already exists"));
 
+        SetTokenCookie(result.Token, result.ExpiresAt);
         return Ok(result);
+    }
+
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete(TokenCookieName);
+        return NoContent();
+    }
+
+    private void SetTokenCookie(string token, DateTime expiresAt)
+    {
+        Response.Cookies.Append(TokenCookieName, token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Expires = expiresAt
+        });
     }
 }

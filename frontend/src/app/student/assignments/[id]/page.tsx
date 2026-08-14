@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
-import { getStoredUser } from "@/lib/auth";
 import { Assignment, Submission, CreateSubmissionDto } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
 
 interface StudentAssignmentDetailProps {
   params: Promise<{ id: string }>;
@@ -49,16 +49,12 @@ export default function StudentAssignmentDetail({ params }: StudentAssignmentDet
     }
     setSubmitting(true);
     try {
-      const storedUser = getStoredUser();
-      const studentId = storedUser?.id ?? "";
-
       if (existingSubmission) {
         await api.put<Submission>(`/api/student/submissions/${existingSubmission.id}`, { content });
         alert("Submission updated successfully!");
       } else {
         const payload: CreateSubmissionDto = {
           assignmentId: id,
-          studentId: studentId,
           content,
         };
         await api.post<Submission>("/api/student/submissions", payload);
@@ -76,10 +72,7 @@ export default function StudentAssignmentDetail({ params }: StudentAssignmentDet
     return (
       <ProtectedRoute allowedRoles={["Student"]}>
         <DashboardLayout allowedRoles={["Student"]}>
-          <div className="loading-note">
-            <span className="spinner"></span>
-            Loading…
-          </div>
+          <LoadingNote />
         </DashboardLayout>
       </ProtectedRoute>
     );

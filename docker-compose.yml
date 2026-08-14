@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: assignment_mgmt
       POSTGRES_USER: asm_user
-      POSTGRES_PASSWORD: asm_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-asm_pass}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -28,8 +28,8 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=assignment_mgmt;Username=asm_user;Password=asm_pass
-      JwtSettings__SecretKey: THIS_SHOULD_BE_REPLACED_WITH_A_SECURE_KEY_IN_PRODUCTION_USE_AT_LEAST_32_CHARS
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=assignment_mgmt;Username=asm_user;Password=${POSTGRES_PASSWORD:-asm_pass}
+      JwtSettings__SecretKey: ${JWT_SECRET:-}
       JwtSettings__ExpiryMinutes: "1440"
       JwtSettings__Issuer: AssignmentManagementAPI
       JwtSettings__Audience: AssignmentManagementClient

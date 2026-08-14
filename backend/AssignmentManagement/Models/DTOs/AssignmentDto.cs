@@ -14,8 +14,6 @@ public class CreateAssignmentDto
 
     public Guid ClassSubjectId { get; set; }
 
-    public Guid TeacherId { get; set; }
-
     public DateTime Deadline { get; set; }
 
     [Range(0.01, 1000000, ErrorMessage = "Max marks must be greater than zero")]

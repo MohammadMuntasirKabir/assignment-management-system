@@ -42,7 +42,6 @@ public class AssignmentTests : IDisposable
             Title = "New Assignment",
             Description = "New Description",
             ClassSubjectId = _classSubjectId,
-            TeacherId = _teacherId,
             Deadline = DateTime.UtcNow.AddDays(7),
             MaxMarks = 50,
             Status = AssignmentStatus.Draft
@@ -54,7 +53,7 @@ public class AssignmentTests : IDisposable
             Title = dto.Title,
             Description = dto.Description,
             ClassSubjectId = dto.ClassSubjectId,
-            TeacherId = dto.TeacherId,
+            TeacherId = _teacherId,
             Deadline = dto.Deadline,
             MaxMarks = dto.MaxMarks,
             Status = dto.Status,

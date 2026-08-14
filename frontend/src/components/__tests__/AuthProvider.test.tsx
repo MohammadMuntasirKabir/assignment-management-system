@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import api from "@/lib/api";
-import { getStoredUser, getStoredToken } from "@/lib/auth";
+import { getStoredUser } from "@/lib/auth";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -34,7 +34,6 @@ function TestComponent() {
 describe("AuthProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     document.cookie = "user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
   });
 
@@ -59,7 +58,6 @@ describe("AuthProvider", () => {
       role: "Admin",
       createdAt: "2026-08-07T10:00:00Z",
     };
-    document.cookie = `token=abc; path=/`;
     document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; path=/`;
 
     render(
@@ -73,7 +71,7 @@ describe("AuthProvider", () => {
     });
   });
 
-  it("logs in, stores the token and user, and updates state", async () => {
+  it("logs in, stores the user in a JS-readable cookie only, and updates state", async () => {
     mockPost.mockResolvedValueOnce({
       data: {
         userId: "2",
@@ -99,7 +97,7 @@ describe("AuthProvider", () => {
         password: "secret",
       });
     });
-    expect(getStoredToken()).toBe("tok-123");
+    expect(document.cookie).not.toContain("token");
     expect(getStoredUser()?.role).toBe("Student");
     await waitFor(() => {
       expect(screen.getByTestId("user").textContent).toBe("bob@example.com");
@@ -114,7 +112,6 @@ describe("AuthProvider", () => {
       role: "Admin",
       createdAt: "2026-08-07T10:00:00Z",
     };
-    document.cookie = `token=abc; path=/`;
     document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; path=/`;
 
     render(
@@ -127,11 +124,11 @@ describe("AuthProvider", () => {
       expect(screen.getByTestId("user").textContent).toBe("alice@example.com");
     });
 
-    act(() => {
+    await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Logout" }));
     });
 
-    expect(getStoredToken()).toBeNull();
+    expect(document.cookie).not.toContain("token");
     expect(getStoredUser()).toBeNull();
     expect(screen.getByTestId("user").textContent).toBe("null");
   });

@@ -6,6 +6,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { Submission } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function StudentSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -39,12 +41,9 @@ export default function StudentSubmissionsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : gradedSubmissions.length === 0 ? (
-            <div className="empty-state">No submitted or graded assignments yet.</div>
+            <EmptyState>No submitted or graded assignments yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">

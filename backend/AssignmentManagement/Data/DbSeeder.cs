@@ -7,8 +7,6 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext context)
     {
-        await context.Database.MigrateAsync();
-
         if (await context.Users.AnyAsync()) return;
 
         var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123");

@@ -1,14 +1,8 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@/test-utils/mocks";
+import { mockGet, mockPost, mockDelete } from "@/test-utils/mocks";
 import AdminEnrollmentsPage from "@/app/admin/enrollments/page";
 
-const mockGet = jest.fn();
-const mockPost = jest.fn();
-const mockDelete = jest.fn();
-
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn() }),
-  usePathname: () => "/admin/enrollments",
-}));
 
 jest.mock("@/components/AuthProvider", () => ({
   useAuth: () => ({

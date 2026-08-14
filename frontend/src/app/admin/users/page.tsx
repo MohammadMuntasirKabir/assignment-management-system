@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/components/AuthProvider";
 import api, { getErrorMessage } from "@/lib/api";
-import { AuthResponse, PagedResult, User } from "@/lib/types";
+import { ApiUser, AuthResponse, PagedResult, User } from "@/lib/types";
 import { roleNumberToRole, roleToNumber } from "@/lib/auth";
 import Pagination from "@/components/Pagination";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -38,14 +38,16 @@ export default function AdminUsersPage() {
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   const fetchUsers = useCallback(async (targetPage: number) => {
-    setLoading(true);
+    setLoading(!hasLoadedRef.current);
     try {
-      const response = await api.get<PagedResult<Omit<User, "role"> & { role: number }>>(
+      const response = await api.get<PagedResult<ApiUser>>(
         "/api/admin/users",
         { params: { page: targetPage, pageSize: PAGE_SIZE } }
       );
+      hasLoadedRef.current = true;
       setUsers(
         (Array.isArray(response.data?.items) ? response.data.items : []).map((u) => ({
           ...u,
@@ -103,10 +105,8 @@ export default function AdminUsersPage() {
     setSaving(true);
     setModalError("");
 
-    const isTransferringAdmin =
-      editingUser !== null && !isSelf(editingUser) && formData.role === 0;
-
-    if (isTransferringAdmin) {
+    if (editingUser !== null && !isSelf(editingUser) && formData.role === 0) {
+      const target = editingUser;
       if (!transferDeleteSelf && !transferSelfRole) {
         setModalError("Choose a new role for your account or delete it.");
         setSaving(false);
@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
         const res = await api.post<{ currentSession: AuthResponse | null; deletedSelf: boolean }>(
           "/api/admin/transfer-admin",
           {
-            targetUserId: editingUser!.id,
+            targetUserId: target.id,
             selfRole: transferDeleteSelf ? undefined : transferSelfRole,
             deleteSelf: transferDeleteSelf,
           }
@@ -125,12 +125,12 @@ export default function AdminUsersPage() {
         setSaving(false);
         if (transferDeleteSelf) {
           setSuccessInfo({
-            message: `Admin role transferred to ${editingUser!.name}. Your account was deleted, so you are now signed out.`,
+            message: `Admin role transferred to ${target.name}. Your account was deleted, so you are now signed out.`,
             currentSession: null,
           });
         } else if (res.data.currentSession) {
           setSuccessInfo({
-            message: `Admin role transferred to ${editingUser!.name}. You are now a ${roleNumberToRole(
+            message: `Admin role transferred to ${target.name}. You are now a ${roleNumberToRole(
               res.data.currentSession.role
             )} — Continue to switch to your new dashboard.`,
             currentSession: res.data.currentSession,

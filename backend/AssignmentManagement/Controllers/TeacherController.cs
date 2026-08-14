@@ -32,6 +32,7 @@ public class TeacherController : ControllerBase
                 .ThenInclude(cs => cs.Class)
             .Include(tcs => tcs.ClassSubject)
                 .ThenInclude(cs => cs.Subject)
+            .AsNoTracking()
             .OrderBy(tcs => tcs.ClassSubject.Class.Name)
             .ThenBy(tcs => tcs.ClassSubject.Subject.Name)
             .ToListAsync();
@@ -51,6 +52,7 @@ public class TeacherController : ControllerBase
             .Include(a => a.ClassSubject)
                 .ThenInclude(cs => cs.Subject)
             .Include(a => a.Teacher)
+            .AsNoTracking()
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
@@ -63,19 +65,16 @@ public class TeacherController : ControllerBase
     {
         var teacherId = _authService.GetUserIdFromToken(User);
 
-        if (dto.TeacherId != teacherId)
-            return Forbidden("You can only create assignments for yourself");
-
         if (dto.ClassSubjectId == Guid.Empty)
-            return BadRequest(new { message = "A class-subject must be selected" });
+            return BadRequest(ApiErrors.BadRequest("A class-subject must be selected"));
 
         if (dto.Deadline == default)
-            return BadRequest(new { message = "A deadline is required" });
+            return BadRequest(ApiErrors.BadRequest("A deadline is required"));
 
         var isAssigned = await _context.TeacherClassSubjects
             .AnyAsync(tcs => tcs.TeacherId == teacherId && tcs.ClassSubjectId == dto.ClassSubjectId);
         if (!isAssigned)
-            return Forbidden("You are not assigned to this class-subject");
+            return Forbidden(ApiErrors.Forbidden("You are not assigned to this class-subject"));
 
         var assignment = new Assignment
         {
@@ -104,9 +103,9 @@ public class TeacherController : ControllerBase
         var teacherId = _authService.GetUserIdFromToken(User);
         var assignment = await GetAssignmentEntityAsync(id);
         if (assignment == null)
-            return NotFound(new { message = "Assignment not found" });
+            return NotFound(ApiErrors.NotFound("Assignment not found"));
         if (assignment.TeacherId != teacherId)
-            return Forbidden("You do not own this assignment");
+            return Forbidden(ApiErrors.Forbidden("You do not own this assignment"));
 
         return Ok(DtoMapper.ToAssignment(assignment));
     }
@@ -116,17 +115,17 @@ public class TeacherController : ControllerBase
     public async Task<ActionResult<AssignmentResponseDto>> UpdateAssignment(Guid id, [FromBody] UpdateAssignmentDto dto)
     {
         var teacherId = _authService.GetUserIdFromToken(User);
-        var assignment = await _context.Assignments.FindAsync(id);
+        var assignment = await GetAssignmentEntityAsync(id);
         if (assignment == null)
-            return NotFound(new { message = "Assignment not found" });
+            return NotFound(ApiErrors.NotFound("Assignment not found"));
         if (assignment.TeacherId != teacherId)
-            return Forbidden("You do not own this assignment");
+            return Forbidden(ApiErrors.Forbidden("You do not own this assignment"));
 
         if (dto.ClassSubjectId == Guid.Empty)
-            return BadRequest(new { message = "A class-subject must be selected" });
+            return BadRequest(ApiErrors.BadRequest("A class-subject must be selected"));
 
         if (dto.Deadline == default)
-            return BadRequest(new { message = "A deadline is required" });
+            return BadRequest(ApiErrors.BadRequest("A deadline is required"));
 
         // Verify teacher is still assigned to the new class-subject if changed
         if (dto.ClassSubjectId != assignment.ClassSubjectId)
@@ -134,7 +133,7 @@ public class TeacherController : ControllerBase
             var isAssigned = await _context.TeacherClassSubjects
                 .AnyAsync(tcs => tcs.TeacherId == teacherId && tcs.ClassSubjectId == dto.ClassSubjectId);
             if (!isAssigned)
-                return Forbidden("You are not assigned to this class-subject");
+                return Forbidden(ApiErrors.Forbidden("You are not assigned to this class-subject"));
         }
 
         assignment.Title = dto.Title;
@@ -146,8 +145,7 @@ public class TeacherController : ControllerBase
         assignment.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        var result = await GetAssignmentEntityAsync(assignment.Id);
-        return Ok(DtoMapper.ToAssignment(result!));
+        return Ok(DtoMapper.ToAssignment(assignment));
     }
 
     // DELETE: Delete assignment
@@ -157,9 +155,9 @@ public class TeacherController : ControllerBase
         var teacherId = _authService.GetUserIdFromToken(User);
         var assignment = await _context.Assignments.FindAsync(id);
         if (assignment == null)
-            return NotFound(new { message = "Assignment not found" });
+            return NotFound(ApiErrors.NotFound("Assignment not found"));
         if (assignment.TeacherId != teacherId)
-            return Forbidden("You do not own this assignment");
+            return Forbidden(ApiErrors.Forbidden("You do not own this assignment"));
 
         _context.Assignments.Remove(assignment);
         await _context.SaveChangesAsync();
@@ -174,6 +172,7 @@ public class TeacherController : ControllerBase
         var submissions = await _context.Submissions
             .Include(s => s.Assignment)
             .Include(s => s.Student)
+            .AsNoTracking()
             .Where(s => s.Assignment.TeacherId == teacherId)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
@@ -188,9 +187,9 @@ public class TeacherController : ControllerBase
         var teacherId = _authService.GetUserIdFromToken(User);
         var submission = await GetSubmissionEntityAsync(id);
         if (submission == null)
-            return NotFound(new { message = "Submission not found" });
+            return NotFound(ApiErrors.NotFound("Submission not found"));
         if (submission.Assignment.TeacherId != teacherId)
-            return Forbidden("You do not have access to this submission");
+            return Forbidden(ApiErrors.Forbidden("You do not have access to this submission"));
 
         return Ok(DtoMapper.ToSubmission(submission));
     }
@@ -202,12 +201,12 @@ public class TeacherController : ControllerBase
         var teacherId = _authService.GetUserIdFromToken(User);
         var submission = await GetSubmissionEntityAsync(id);
         if (submission == null)
-            return NotFound(new { message = "Submission not found" });
+            return NotFound(ApiErrors.NotFound("Submission not found"));
         if (submission.Assignment.TeacherId != teacherId)
-            return Forbidden("You do not have access to this submission");
+            return Forbidden(ApiErrors.Forbidden("You do not have access to this submission"));
 
         if (dto.Marks > submission.Assignment.MaxMarks)
-            return BadRequest(new { message = $"Marks exceed maximum ({submission.Assignment.MaxMarks})" });
+            return BadRequest(ApiErrors.BadRequest($"Marks exceed maximum ({submission.Assignment.MaxMarks})"));
 
         submission.Status = dto.Status;
         submission.Marks = dto.Marks;
@@ -215,8 +214,7 @@ public class TeacherController : ControllerBase
         submission.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        var result = await GetSubmissionEntityAsync(submission.Id);
-        return Ok(DtoMapper.ToSubmission(result!));
+        return Ok(DtoMapper.ToSubmission(submission));
     }
 
     // PUT: Change submission status
@@ -224,20 +222,17 @@ public class TeacherController : ControllerBase
     public async Task<ActionResult<SubmissionResponseDto>> ChangeSubmissionStatus(Guid id, [FromBody] ChangeStatusDto dto)
     {
         var teacherId = _authService.GetUserIdFromToken(User);
-        var submission = await _context.Submissions
-            .Include(s => s.Assignment)
-            .FirstOrDefaultAsync(s => s.Id == id);
+        var submission = await GetSubmissionEntityAsync(id);
         if (submission == null)
-            return NotFound(new { message = "Submission not found" });
+            return NotFound(ApiErrors.NotFound("Submission not found"));
         if (submission.Assignment.TeacherId != teacherId)
-            return Forbidden("You do not have access to this submission");
+            return Forbidden(ApiErrors.Forbidden("You do not have access to this submission"));
 
         submission.Status = dto.Status;
         submission.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        var result = await GetSubmissionEntityAsync(submission.Id);
-        return Ok(DtoMapper.ToSubmission(result!));
+        return Ok(DtoMapper.ToSubmission(submission));
     }
 
     private async Task<Assignment?> GetAssignmentEntityAsync(Guid id)
@@ -259,6 +254,6 @@ public class TeacherController : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == id);
     }
 
-    private ObjectResult Forbidden(string message) =>
-        StatusCode(StatusCodes.Status403Forbidden, new { message });
+    private ObjectResult Forbidden(ProblemDetails problem) =>
+        StatusCode(StatusCodes.Status403Forbidden, problem);
 }

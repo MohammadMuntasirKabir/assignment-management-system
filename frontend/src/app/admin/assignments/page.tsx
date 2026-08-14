@@ -5,6 +5,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { Assignment, PagedResult } from "@/lib/types";
+import { assignmentStatusLabel, assignmentStampClass } from "@/lib/status";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 import Pagination from "@/components/Pagination";
 
 const PAGE_SIZE = 20;
@@ -40,19 +43,6 @@ export default function AdminAssignmentsPage() {
     fetchAssignments(next);
   };
 
-  const statusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      "0": "Draft",
-      "1": "Published",
-      Draft: "Draft",
-      Published: "Published",
-    };
-    return labels[status] || status;
-  };
-
-  const stampClass = (status: string) =>
-    statusLabel(status) === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
-
   return (
     <ProtectedRoute allowedRoles={["Admin"]}>
       <DashboardLayout allowedRoles={["Admin"]}>
@@ -63,12 +53,9 @@ export default function AdminAssignmentsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : assignments.length === 0 ? (
-            <div className="empty-state">No assignments recorded yet.</div>
+            <EmptyState>No assignments recorded yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">
@@ -93,7 +80,7 @@ export default function AdminAssignmentsPage() {
                       <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                       <td className="tnum">{a.maxMarks}</td>
                       <td>
-                        <span className={stampClass(a.status)}>{statusLabel(a.status)}</span>
+                        <span className={assignmentStampClass(a.status)}>{assignmentStatusLabel(a.status)}</span>
                       </td>
                     </tr>
                   ))}

@@ -15,6 +15,14 @@ export interface User {
   createdAt: string;
 }
 
+export interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  role: number;
+  createdAt: string;
+}
+
 export interface AuthResponse {
   userId: string;
   name: string;
@@ -71,16 +79,6 @@ export interface CreateAssignmentDto {
   title: string;
   description: string;
   classSubjectId: string;
-  teacherId: string;
-  deadline: string;
-  maxMarks: number;
-  status: "Draft" | "Published";
-}
-
-export interface UpdateAssignmentDto {
-  title: string;
-  description: string;
-  classSubjectId: string;
   deadline: string;
   maxMarks: number;
   status: "Draft" | "Published";
@@ -111,15 +109,7 @@ export interface GradeSubmissionDto {
 
 export interface CreateSubmissionDto {
   assignmentId: string;
-  studentId: string;
   content: string;
-}
-
-export interface RegisterDto {
-  name: string;
-  email: string;
-  password: string;
-  role: number;
 }
 
 export interface AssignTeacherDto {
@@ -156,17 +146,7 @@ export interface CreateClassDto {
   description: string;
 }
 
-export interface UpdateClassDto {
-  name: string;
-  description: string;
-}
-
 export interface CreateSubjectDto {
-  name: string;
-  description: string;
-}
-
-export interface UpdateSubjectDto {
   name: string;
   description: string;
 }

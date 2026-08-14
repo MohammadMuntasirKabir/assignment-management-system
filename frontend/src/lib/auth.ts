@@ -1,12 +1,13 @@
 import Cookies from "js-cookie";
 import { AuthResponse, User, UserRole } from "./types";
 
-export const TOKEN_COOKIE = "token";
+// The JWT is stored in an HttpOnly cookie (set by the backend) and is not
+// readable from JavaScript. Only the non-sensitive user profile is kept in a
+// JS-readable cookie, purely to hydrate the UI.
 export const USER_COOKIE = "user";
 
 export function saveAuthData(response: AuthResponse): void {
   const maxAgeDays = 1;
-  Cookies.set(TOKEN_COOKIE, response.token, { expires: maxAgeDays, sameSite: "strict" });
   const user: User = {
     id: response.userId,
     name: response.name,
@@ -18,7 +19,6 @@ export function saveAuthData(response: AuthResponse): void {
 }
 
 export function clearAuthData(): void {
-  Cookies.remove(TOKEN_COOKIE);
   Cookies.remove(USER_COOKIE);
 }
 
@@ -32,12 +32,11 @@ export function getStoredUser(): User | null {
   }
 }
 
-export function getStoredToken(): string | null {
-  return Cookies.get(TOKEN_COOKIE) ?? null;
-}
-
 export function roleNumberToRole(roleNum: number): UserRole {
-  return roleNum === 0 ? "Admin" : roleNum === 1 ? "Teacher" : "Student";
+  if (roleNum === 0) return "Admin";
+  if (roleNum === 1) return "Teacher";
+  if (roleNum === 2) return "Student";
+  throw new Error(`Unknown role number: ${roleNum}`);
 }
 
 export function roleToNumber(role: UserRole): number {
@@ -45,7 +44,5 @@ export function roleToNumber(role: UserRole): number {
 }
 
 export function isAuthenticated(): boolean {
-  const token = getStoredToken();
-  if (!token) return false;
-  return true;
+  return getStoredUser() !== null;
 }

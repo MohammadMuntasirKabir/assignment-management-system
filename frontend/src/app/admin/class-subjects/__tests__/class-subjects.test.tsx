@@ -1,17 +1,8 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@/test-utils/mocks";
+import { mockGet, mockPut, mockPost, mockDelete, mockSetSession, mockLogout } from "@/test-utils/mocks";
 import AdminClassSubjectsPage from "@/app/admin/class-subjects/page";
 
-const mockGet = jest.fn();
-const mockPut = jest.fn();
-const mockPost = jest.fn();
-const mockDelete = jest.fn();
-const mockSetSession = jest.fn();
-const mockLogout = jest.fn();
-
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn() }),
-  usePathname: () => "/admin/class-subjects",
-}));
 
 jest.mock("@/components/AuthProvider", () => ({
   useAuth: () => ({

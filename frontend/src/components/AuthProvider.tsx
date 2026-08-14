@@ -66,7 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authResponse;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch {
+      // Best effort — clear locally regardless of server response.
+    }
     clearAuthData();
     setUser(null);
     router.push("/login");

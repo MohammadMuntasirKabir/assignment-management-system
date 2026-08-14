@@ -1,12 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import "@/test-utils/mocks";
+import { mockGet } from "@/test-utils/mocks";
 import StudentDashboard from "@/app/student/page";
 
-const mockGet = jest.fn();
-
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn() }),
-  usePathname: () => "/student",
-}));
 
 jest.mock("@/components/ProtectedRoute", () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;

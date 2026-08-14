@@ -133,12 +133,31 @@ public class AuthTests : IDisposable
 
 public class AuthControllerTests
 {
+    private static AuthController CreateController(IAuthService service)
+    {
+        return new AuthController(service)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
+    }
+
     [Fact]
     public async Task Register_PublicEndpoint_ForcesStudentRole()
     {
         RegisterDto? captured = null;
-        var service = new CapturingAuthService(dto => { captured = dto; return new AuthResponseDto(); });
-        var controller = new AuthController(service);
+        var service = new CapturingAuthService(dto =>
+        {
+            captured = dto;
+            return new AuthResponseDto
+            {
+                Token = "tok-123",
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            };
+        });
+        var controller = CreateController(service);
 
         var result = await controller.Register(new RegisterDto
         {
@@ -157,7 +176,7 @@ public class AuthControllerTests
     public async Task Register_PublicEndpoint_DuplicateEmail_ReturnsConflict()
     {
         var service = new CapturingAuthService(_ => null);
-        var controller = new AuthController(service);
+        var controller = CreateController(service);
 
         var result = await controller.Register(new RegisterDto
         {
@@ -174,7 +193,7 @@ public class AuthControllerTests
     public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
         var service = new CapturingAuthService(_ => null);
-        var controller = new AuthController(service);
+        var controller = CreateController(service);
 
         var result = await controller.Login(new LoginDto
         {

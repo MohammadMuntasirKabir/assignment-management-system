@@ -5,6 +5,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
 import { ClassSubjectDto, Class, Subject } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function AdminClassSubjectsPage() {
@@ -91,12 +93,9 @@ export default function AdminClassSubjectsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : classSubjects.length === 0 ? (
-            <div className="empty-state">No class-subject links yet.</div>
+            <EmptyState>No class-subject links yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">

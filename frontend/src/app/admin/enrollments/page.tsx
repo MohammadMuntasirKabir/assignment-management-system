@@ -6,6 +6,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
 import { StudentEnrollmentDto, Class, User } from "@/lib/types";
 import { roleNumberToRole } from "@/lib/auth";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 import { PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function AdminEnrollmentsPage() {
@@ -95,12 +97,9 @@ export default function AdminEnrollmentsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : enrollments.length === 0 ? (
-            <div className="empty-state">No enrollments yet.</div>
+            <EmptyState>No enrollments yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">

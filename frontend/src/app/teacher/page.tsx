@@ -5,6 +5,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { Assignment, ClassSubjectDto, Submission } from "@/lib/types";
+import { assignmentStatusLabel, assignmentStampClass } from "@/lib/status";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function TeacherDashboard() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -39,12 +42,6 @@ export default function TeacherDashboard() {
     fetchClassSubjects();
   }, []);
 
-  const statusText = (status: string) =>
-    status === "Published" ? "Published" : "Draft";
-
-  const statusStamp = (status: string) =>
-    status === "Published" ? "stamp stamp-blue" : "stamp stamp-gray";
-
   return (
     <ProtectedRoute allowedRoles={["Teacher"]}>
       <DashboardLayout allowedRoles={["Teacher"]}>
@@ -70,12 +67,9 @@ export default function TeacherDashboard() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : assignments.length === 0 ? (
-            <div className="empty-state">You have not created any assignments yet.</div>
+            <EmptyState>You have not created any assignments yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <div className="anno px-4 pt-4">My Assignments</div>
@@ -95,7 +89,7 @@ export default function TeacherDashboard() {
                       <td className="tnum">{new Date(a.deadline).toLocaleString()}</td>
                       <td className="tnum">{a.maxMarks}</td>
                       <td>
-                        <span className={statusStamp(a.status)}>{statusText(a.status)}</span>
+                        <span className={assignmentStampClass(a.status)}>{assignmentStatusLabel(a.status)}</span>
                       </td>
                     </tr>
                   ))}

@@ -2,18 +2,15 @@ import {
   saveAuthData,
   clearAuthData,
   getStoredUser,
-  getStoredToken,
   roleNumberToRole,
   roleToNumber,
   isAuthenticated,
-  TOKEN_COOKIE,
   USER_COOKIE,
 } from "@/lib/auth";
 import { AuthResponse, User } from "@/lib/types";
 
 describe("auth helpers", () => {
   beforeEach(() => {
-    document.cookie = `${TOKEN_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     document.cookie = `${USER_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
   });
 
@@ -26,9 +23,12 @@ describe("auth helpers", () => {
       expect(roleNumberToRole(1)).toBe("Teacher");
     });
 
-    it("maps any other number to Student", () => {
+    it("maps 2 to Student", () => {
       expect(roleNumberToRole(2)).toBe("Student");
-      expect(roleNumberToRole(99)).toBe("Student");
+    });
+
+    it("throws for an unknown role number (fail-closed)", () => {
+      expect(() => roleNumberToRole(99)).toThrow();
     });
   });
 
@@ -47,7 +47,7 @@ describe("auth helpers", () => {
   });
 
   describe("saveAuthData and getters", () => {
-    it("saves token and user data", () => {
+    it("stores only the user profile, not the token", () => {
       const response: AuthResponse = {
         userId: "u1",
         name: "Alice",
@@ -59,7 +59,8 @@ describe("auth helpers", () => {
 
       saveAuthData(response);
 
-      expect(getStoredToken()).toBe("abc123");
+      // The token lives in an HttpOnly cookie set by the backend; JS never sees it.
+      expect(document.cookie).not.toContain("token");
       expect(getStoredUser()).toEqual({
         id: "u1",
         name: "Alice",
@@ -71,7 +72,6 @@ describe("auth helpers", () => {
 
     it("returns null when no user is stored", () => {
       expect(getStoredUser()).toBeNull();
-      expect(getStoredToken()).toBeNull();
     });
 
     it("returns null for malformed user JSON", () => {
@@ -81,7 +81,7 @@ describe("auth helpers", () => {
   });
 
   describe("clearAuthData", () => {
-    it("removes token and user cookies", () => {
+    it("removes the stored user cookie", () => {
       saveAuthData({
         userId: "u1",
         name: "Alice",
@@ -93,13 +93,12 @@ describe("auth helpers", () => {
 
       clearAuthData();
 
-      expect(getStoredToken()).toBeNull();
       expect(getStoredUser()).toBeNull();
     });
   });
 
   describe("isAuthenticated", () => {
-    it("returns true when a token exists", () => {
+    it("returns true when a user profile is stored", () => {
       saveAuthData({
         userId: "u1",
         name: "Alice",
@@ -111,7 +110,7 @@ describe("auth helpers", () => {
       expect(isAuthenticated()).toBe(true);
     });
 
-    it("returns false when no token exists", () => {
+    it("returns false when no user profile is stored", () => {
       expect(isAuthenticated()).toBe(false);
     });
   });

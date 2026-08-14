@@ -5,6 +5,31 @@ namespace AssignmentManagement.Services;
 
 public static class DtoMapper
 {
+    public static UserResponseDto ToUser(User u) => new()
+    {
+        Id = u.Id,
+        Name = u.Name,
+        Email = u.Email,
+        Role = u.Role,
+        CreatedAt = u.CreatedAt
+    };
+
+    public static ClassResponseDto ToClass(Class c) => new()
+    {
+        Id = c.Id,
+        Name = c.Name,
+        Description = c.Description,
+        CreatedAt = c.CreatedAt
+    };
+
+    public static SubjectResponseDto ToSubject(Subject s) => new()
+    {
+        Id = s.Id,
+        Name = s.Name,
+        Description = s.Description,
+        CreatedAt = s.CreatedAt
+    };
+
     public static AssignmentResponseDto ToAssignment(Assignment a) => new()
     {
         Id = a.Id,

@@ -6,6 +6,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { Assignment, Submission } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 
 type AssignmentFilter = "due" | "submitted" | "overdue";
 
@@ -99,12 +101,9 @@ export default function StudentAssignmentsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : visibleAssignments.length === 0 ? (
-            <div className="empty-state">{EMPTY_NOTES[filter]}</div>
+            <EmptyState>{EMPTY_NOTES[filter]}</EmptyState>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {visibleAssignments.map((a) => (

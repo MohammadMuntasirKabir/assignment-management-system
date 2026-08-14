@@ -5,6 +5,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { PagedResult, Submission } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 import Pagination from "@/components/Pagination";
 
 const PAGE_SIZE = 20;
@@ -50,12 +52,9 @@ export default function AdminSubmissionsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : submissions.length === 0 ? (
-            <div className="empty-state">No submissions recorded yet.</div>
+            <EmptyState>No submissions recorded yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">

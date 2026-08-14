@@ -195,58 +195,6 @@ public class SubmissionTests : IDisposable
     }
 
     [Fact]
-    public async Task Teacher_CannotAssignMarksExceedingMaxMarks()
-    {
-        var (assignment, student, _, _) = await SetupAsync();
-
-        var submission = new Submission
-        {
-            Id = Guid.NewGuid(),
-            AssignmentId = assignment.Id,
-            StudentId = student.Id,
-            Content = "Student submission.",
-            Status = SubmissionStatus.Submitted,
-            SubmittedAt = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Submissions.Add(submission);
-        await _context.SaveChangesAsync();
-
-        var marksExceedingMax = assignment.MaxMarks + 1;
-        bool exceedsMax = marksExceedingMax > assignment.MaxMarks;
-
-        exceedsMax.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Student_CannotUpdateSubmission_AfterDeadline()
-    {
-        var (_, student, _, _) = await SetupAsync();
-        var pastAssignment = await _context.Assignments.FirstAsync(a => a.Title == "Past Assignment");
-
-        var submission = new Submission
-        {
-            Id = Guid.NewGuid(),
-            AssignmentId = pastAssignment.Id,
-            StudentId = student.Id,
-            Content = "Late submission.",
-            Status = SubmissionStatus.Late,
-            SubmittedAt = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Submissions.Add(submission);
-        await _context.SaveChangesAsync();
-
-        DateTime.UtcNow.Should().BeAfter(pastAssignment.Deadline);
-
-        submission.Status.Should().Be(SubmissionStatus.Late);
-    }
-
-    [Fact]
     public async Task Submission_PreventsDuplicateStudentAssignmentPair()
     {
         await TestHelpers.SeedTestDataAsync(_context);

@@ -5,6 +5,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api from "@/lib/api";
 import { Assignment, Submission } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function StudentDashboard() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -79,16 +81,13 @@ export default function StudentDashboard() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : (
             <>
               <div className="sheet overflow-x-auto mb-6">
                 <div className="anno px-4 pt-4">My Assignments</div>
                 {availableAssignments.length === 0 ? (
-                  <div className="empty-state">No assignments available.</div>
+                  <EmptyState>No assignments available.</EmptyState>
                 ) : (
                   <table className="table-sheet">
                     <thead>
@@ -118,7 +117,7 @@ export default function StudentDashboard() {
               <div className="sheet overflow-x-auto">
                 <div className="anno px-4 pt-4">My Recent Submissions</div>
                 {submissions.length === 0 ? (
-                  <div className="empty-state">No submissions yet.</div>
+                  <EmptyState>No submissions yet.</EmptyState>
                 ) : (
                   <table className="table-sheet">
                     <thead>

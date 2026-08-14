@@ -7,8 +7,6 @@ public class CreateSubmissionDto
 {
     public Guid AssignmentId { get; set; }
 
-    public Guid StudentId { get; set; }
-
     [Required(ErrorMessage = "Submission content is required")]
     [MaxLength(20000, ErrorMessage = "Submission cannot exceed 20000 characters")]
     public string Content { get; set; } = string.Empty;

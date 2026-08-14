@@ -5,6 +5,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import api, { getErrorMessage } from "@/lib/api";
 import { Submission, GradeSubmissionDto } from "@/lib/types";
+import LoadingNote from "@/components/ui/LoadingNote";
+import EmptyState from "@/components/ui/EmptyState";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function TeacherSubmissionsPage() {
@@ -70,12 +72,9 @@ export default function TeacherSubmissionsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-note">
-              <span className="spinner"></span>
-              Loading…
-            </div>
+            <LoadingNote />
           ) : submissions.length === 0 ? (
-            <div className="empty-state">No submissions to review yet.</div>
+            <EmptyState>No submissions to review yet.</EmptyState>
           ) : (
             <div className="sheet overflow-x-auto">
               <table className="table-sheet">
